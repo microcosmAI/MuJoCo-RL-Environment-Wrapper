@@ -1,0 +1,20 @@
+{
+    "Info": "This is a test",
+    "Objects":[
+        {
+            "Name": "target",
+            "Tags":["target", "cube"],
+            "Description": "This is a cube"
+        },
+        {
+            "Name": "target_2",
+            "Tags":["target", "cube"],
+            "Description": "This is the 2nd target"
+        },
+        {
+            "Name": "target_3",
+            "Tags":["target"],
+            "Description": "This is the 3rd target!"
+        }
+    ]
+}

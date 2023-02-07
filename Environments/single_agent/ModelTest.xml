@@ -1,0 +1,18 @@
+<mujoco>
+  <worldbody>
+    <light diffuse=".5 .5 .5" pos="0 0 3" dir="0 0 -1" />
+    <geom type="plane" size="5 5 1.110223E-16" rgba=".9 0 0 1" />
+    <body pos="0.53 1.471 0.5">
+      <geom type="box" size="0.05 1.5 0.5" euler="0 0 0" rgba="0 .9 0 1" />
+    </body>
+    <body pos="-0.934 -0.053 0.488">
+      <geom type="box" size="1.5 0.05 0.5" euler="0 0 0" rgba="0 .9 0 1" />
+    </body>
+    <body pos="3.072566 1.444155 0.4191191">
+      <geom type="box" size="0.5 0.6830127 0.6830127" euler="30 0 0" rgba="0 .9 0 1" />
+    </body>
+    <body pos="1.540213 -0.6351334 0.8347964">
+      <geom type="sphere" size="0.5 0.5 0.5" euler="0 0 0" rgba="0 .9 0 1" />
+    </body>
+  </worldbody>
+</mujoco>

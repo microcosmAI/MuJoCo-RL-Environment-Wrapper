@@ -1,0 +1,116 @@
+<mujoco>
+  <compiler angle="degree" coordinate="local" inertiafromgeom="true"/>
+  <option integrator="RK4" timestep="0.01"/>
+  <custom>
+    <numeric data="0.0 0.0 0.55 1.0 0.0 0.0 0.0 0.0 1.0 0.0 -1.0 0.0 -1.0 0.0 1.0" name="init_qpos"/>
+  </custom>
+  <default>
+    <joint armature="1" damping="1" limited="true"/>
+    <geom conaffinity="0" condim="3" density="5.0" friction="1 0.5 0.5" margin="0.01" rgba="0.8 0.6 0.4 1"/>
+  </default>
+  <worldbody>
+    <light diffuse=".5 .5 .5" pos="0 0 3" dir="0 0 -1" />
+    <geom type="plane" conaffinity="1" condim="3" size="15 15 2.220446E-16" rgba=".9 0 0 1" />
+    <body pos="0.53 1.471 0.5">
+      <geom type="box" conaffinity="1" condim="3" size="0.05 1.5 0.5" euler="0 0 0" rgba="0 .9 0 1" />
+    </body>
+    <body pos="-0.934 -0.053 0.488">
+      <geom type="box" conaffinity="1" condim="3" size="1.5 0.05 0.5" euler="0 0 0" rgba="0 .9 0 1" />
+    </body>
+    <body pos="11.99853 -0.9101392 0.4068615" name="target">
+      <geom type="box" conaffinity="1" condim="3" size="0.5 0.5 0.5" euler="0 0 0" rgba="0 .9 0 1" name="test_target1"/>
+    </body>
+    <body pos="-11.99853 -0.9101392 0.4068615" name="target_2">
+      <geom type="box" conaffinity="1" condim="3" size="0.5 0.5 0.5" euler="0 0 0" rgba="0 .9 0 1" />
+    </body>
+    <body pos="11.99853 -11.9101392 0.4068615" name="target_3">
+      <geom type="box" conaffinity="1" condim="3" size="0.5 0.5 0.5" euler="0 0 0" rgba="0 .9 0 1" />
+    </body>
+    <body pos="4.537241 -7.448047 0.4842241">
+      <geom type="box" conaffinity="1" condim="3" size="0.5 0.5 0.5" euler="0 0 0" rgba="0 .9 0 1" />
+    </body>
+    <body pos="6.884696 1.914194 0.4615817">
+      <geom type="box" conaffinity="1" condim="3" size="0.5 0.5 0.5" euler="0 0 0" rgba="0 .9 0 1" />
+    </body>
+    <body pos="-2.420449 -4.230092 0.5146427">
+      <geom type="box" conaffinity="1" condim="3" size="0.5 0.5 0.5" euler="0 0 0" rgba="0 .9 0 1" />
+    </body>
+    <body pos="2.995737 2.91128 0.5115795">
+      <geom type="box" conaffinity="1" condim="3" size="2.5 0.05 0.5" euler="0 0 0" rgba="0 .9 0 1" />
+    </body>
+    <body pos="-2.492513 1.410663 0.4606638">
+      <geom type="box" conaffinity="1" condim="3" size="0.1 1.5 0.5" euler="0 0 0" rgba="0 .9 0 1" />
+    </body>
+    <body pos="3.271456 0.5601169 0.4751832">
+      <geom type="box" conaffinity="1" condim="3" size="0.5 0.5 0.5" euler="0 0 0" rgba="0 .9 0 1" />
+    </body>
+    <body name="torso" pos="-6 -2 1" euler="0 0 0">
+      <camera name="track" mode="trackcom" pos="0 -3 0.3" xyaxes="1 0 0 0 0 1"/>
+      <site name="box_range" type="box" pos="0.2 0 0" size=".05 .05 .05" rgba="0 .9 0 1" euler="0 90 0"/>
+      <site name="box_sensor_top" type="box" pos="0 0 -0.2" size=".05 .05 .05" rgba="0 .9 0 1" euler="0 0 0"/>
+      <geom name="torso_geom" pos="0 0 0" size="0.25" type="sphere"/>
+      <joint armature="0" damping="0" limited="false" margin="0.01" name="root" pos="0 0 0" type="free"/>
+      <body name="front_left_leg" pos="0 0 0">
+        <geom fromto="0.0 0.0 0.0 0.2 0.2 0.0" name="aux_1_geom" size="0.08" type="capsule"/>
+        <body name="aux_1" pos="0.2 0.2 0">
+          <joint axis="0 0 1" name="hip_1" pos="0.0 0.0 0.0" range="-30 30" type="hinge"/>
+          <geom fromto="0.0 0.0 0.0 0.2 0.2 0.0" name="left_leg_geom" size="0.08" type="capsule"/>
+          <body pos="0.2 0.2 0">
+            <joint axis="-1 1 0" name="ankle_1" pos="0.0 0.0 0.0" range="30 70" type="hinge"/>
+            <geom fromto="0.0 0.0 0.0 0.4 0.4 0.0" name="left_ankle_geom" size="0.08" type="capsule"/>
+          </body>
+        </body>
+      </body>
+      <body name="front_right_leg" pos="0 0 0">
+        <geom fromto="0.0 0.0 0.0 -0.2 0.2 0.0" name="aux_2_geom" size="0.08" type="capsule"/>
+        <body name="aux_2" pos="-0.2 0.2 0">
+          <joint axis="0 0 1" name="hip_2" pos="0.0 0.0 0.0" range="-30 30" type="hinge"/>
+          <geom fromto="0.0 0.0 0.0 -0.2 0.2 0.0" name="right_leg_geom" size="0.08" type="capsule"/>
+          <body pos="-0.2 0.2 0">
+            <joint axis="1 1 0" name="ankle_2" pos="0.0 0.0 0.0" range="-70 -30" type="hinge"/>
+            <geom fromto="0.0 0.0 0.0 -0.4 0.4 0.0" name="right_ankle_geom" size="0.08" type="capsule"/>
+          </body>
+        </body>
+      </body>
+      <body name="back_leg" pos="0 0 0">
+        <geom fromto="0.0 0.0 0.0 -0.2 -0.2 0.0" name="aux_3_geom" size="0.08" type="capsule"/>
+        <body name="aux_3" pos="-0.2 -0.2 0">
+          <joint axis="0 0 1" name="hip_3" pos="0.0 0.0 0.0" range="-30 30" type="hinge"/>
+          <geom fromto="0.0 0.0 0.0 -0.2 -0.2 0.0" name="back_leg_geom" size="0.08" type="capsule"/>
+          <body pos="-0.2 -0.2 0">
+            <joint axis="-1 1 0" name="ankle_3" pos="0.0 0.0 0.0" range="-70 -30" type="hinge"/>
+            <geom fromto="0.0 0.0 0.0 -0.4 -0.4 0.0" name="third_ankle_geom" size="0.08" type="capsule"/>
+          </body>
+        </body>
+      </body>
+      <body name="right_back_leg" pos="0 0 0">
+        <geom fromto="0.0 0.0 0.0 0.2 -0.2 0.0" name="aux_4_geom" size="0.08" type="capsule"/>
+        <body name="aux_4" pos="0.2 -0.2 0">
+          <joint axis="0 0 1" name="hip_4" pos="0.0 0.0 0.0" range="-30 30" type="hinge"/>
+          <geom fromto="0.0 0.0 0.0 0.2 -0.2 0.0" name="rightback_leg_geom" size="0.08" type="capsule"/>
+          <body pos="0.2 -0.2 0">
+            <joint axis="1 1 0" name="ankle_4" pos="0.0 0.0 0.0" range="30 70" type="hinge"/>
+            <geom fromto="0.0 0.0 0.0 0.4 -0.4 0.0" name="fourth_ankle_geom" size="0.08" type="capsule"/>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="hip_4" gear="150"/>
+    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="ankle_4" gear="150"/>
+    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="hip_1" gear="150"/>
+    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="ankle_1" gear="150"/>
+    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="hip_2" gear="150"/>
+    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="ankle_2" gear="150"/>
+    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="hip_3" gear="150"/>
+    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="ankle_3" gear="150"/>
+  </actuator>
+
+  <sensor>
+        <rangefinder name="box1" site="box_range" cutoff="20"/>
+        <framexaxis name="yAxis" objtype="site" objname="box_range"/>
+        <rangefinder name="touch_top1" site="box_sensor_top" cutoff="20"/>
+    </sensor>
+</mujoco>
