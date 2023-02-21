@@ -12,6 +12,8 @@ import sys
 sys.path.insert(0, "/Users/cowolff/Documents/GitHub/s.mujoco_environment/Gym")
 from single_agent import SingleAgent
 import torch as th
+from ray import tune
+from ray.rllib.algorithms.a3c import A3CConfig
 
 """
 WARNING!!!!
@@ -118,10 +120,11 @@ def pick_up_dynamic(mujoco_gym, data, model):
 
 
 def test():
-    env = SingleAgent("/Users/cowolff/Documents/GitHub/s.mujoco_environment/Environments/single_agent/ModelVis.xml", info_json="/Users/cowolff/Documents/GitHub/s.mujoco_environment/Environments/single_agent/info_example.json", render=False, print_camera_config=False, add_target_coordinates=False, add_agent_coordinates=True, end_epoch_on_turn=True, env_dynamics=[pick_up_dynamic], reward_function=test_reward, max_step=8192, use_ctrl_cost=False)
+    env = SingleAgent("/Users/cowolff/Documents/GitHub/s.mujoco_environment/Environments/single_agent/ModelVis.xml", infoJson="/Users/cowolff/Documents/GitHub/s.mujoco_environment/Environments/single_agent/info_example.json", render=False, print_camera_config=False, add_target_coordinates=False, add_agent_coordinates=True, end_epoch_on_turn=True, env_dynamics=[pick_up_dynamic], reward_function=test_reward, max_step=8192, use_ctrl_cost=False)
     print("env created")
     obs = env.reset()
     print(env.filterByTag("target"))
+    print(env.get_data("target_3"))
 
 def train():
     env = SingleAgent("/Users/cowolff/Documents/GitHub/s.mujoco_environment/Environments/single_agent/ModelVis.xml", info_json="/Users/cowolff/Documents/GitHub/s.mujoco_environment/Environments/single_agent/info_example.json", render=False, print_camera_config=False, add_target_coordinates=False, add_agent_coordinates=True, end_epoch_on_turn=True, env_dynamics=[pick_up_dynamic], reward_function=test_reward, max_step=8192, use_ctrl_cost=False)
@@ -144,6 +147,16 @@ def train():
         time.sleep(0.1)
         env2.render()
 
+def train_ray():
+    config = A3CConfig()
+    env = SingleAgent("/Users/cowolff/Documents/GitHub/s.mujoco_environment/Environments/single_agent/ModelVis.xml", info_json="/Users/cowolff/Documents/GitHub/s.mujoco_environment/Environments/single_agent/info_example.json", render=False, print_camera_config=False, add_target_coordinates=False, add_agent_coordinates=True, end_epoch_on_turn=True, env_dynamics=[pick_up_dynamic], reward_function=test_reward, max_step=8192, use_ctrl_cost=False)
+    config = config.training(gamma=0.9, lr=0.01, kl_coeff=0.3)
+    config = config.resources(num_gpus=0)
+    config = config.rollouts(num_rollout_workers=4)
+    print(config.to_dict())
+    algo = config.build(env=env)
+    algo.train()
+
 def infer():
     model = SAC.load("models/sac_model")
     env = SingleAgent("envs/ModelVis.xml", info_json="envs/info_example.json", render=True, print_camera_config=False, add_target_coordinates=False, add_agent_coordinates=True, end_epoch_on_turn=True, env_dynamics=[pick_up_dynamic], reward_function=test_reward, max_step=8192, use_ctrl_cost=False)
@@ -162,4 +175,4 @@ def infer():
     env.end()
 
 if __name__ == "__main__":
-    train()
+    train_ray()

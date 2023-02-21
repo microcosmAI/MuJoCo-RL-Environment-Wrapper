@@ -22,6 +22,7 @@ class MuJoCoParent():
 
         jsonFile = open(infoJson)
         self.infoJson = json.load(jsonFile)
+        self.infoNameList = [object["Name"] for object in self.infoJson["Objects"]]
         self.xmlTree = ET.parse(self.xmlPath)
 
         # Load and create the MuJoCo Model and Data
@@ -142,8 +143,10 @@ class MuJoCoParent():
                 "name": data_body.name,
                 "type": "body",
             }
+            if object_1 in self.infoNameList:
+                infos["tags"] = self.infoJson["Objects"][self.infoNameList.index(object_1)]["Tags"]
+                infos["description"] = self.infoJson["Objects"][self.infoNameList.index(object_1)]["Description"]
         except Exception as e:
-            print(e)
             data_geom = self.data.geom(object_1)
             model_geom = self.model.geom(object_1)
             infos = {
@@ -153,6 +156,9 @@ class MuJoCoParent():
                 "name": data_geom.name,
                 "type": "geom"
             }
+            if object_1 in self.infoNameList:
+                infos["tags"] = self.infoJson["Objects"][self.infoNameList.index(object_1)]["Tags"]
+                infos["description"] = self.infoJson["Objects"][self.infoNameList.index(object_1)]["Description"]
         return infos
 
     def exportJson(self, model, data, filename):
@@ -231,3 +237,19 @@ class MuJoCoParent():
             distance (float): distance between the agent and the target
         """
         return math.dist(self.data.body(agent).xipos, self.data.body(target).xipos)
+    
+    def filterByTag(self, tag):
+        """
+        Filter environment for object with specific tag
+        Parameters:
+            tag (str): tag to be filtered for
+        Returns:
+            filtered (list): list of objects with the specified tag
+        """
+        filtered = []
+        for object in self.infoJson["Objects"]:
+            if tag in object["Tags"]:
+                data = self.get_data(object["Name"])
+                data["description"] = object["Description"]
+                filtered.append(data)
+        return filtered

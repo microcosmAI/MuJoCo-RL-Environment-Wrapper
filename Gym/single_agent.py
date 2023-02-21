@@ -15,7 +15,7 @@ from scipy.spatial.transform import Rotation
 from gym_parent import MuJoCoParent
 
 class SingleAgent(gym.Env, MuJoCoParent):
-    def __init__(self, xml_path, info_json="", agent="torso", target="target", render=False, print_camera_config=False, add_target_coordinates=False, add_agent_coordinates=False, end_epoch_on_turn=False, use_ctrl_cost=False, ctrl_factor=0.01, use_head_sensor=False, reward_function=None, done_function=None, env_dynamics=[], max_step=1024):
+    def __init__(self, xml_path, infoJson="", agent="torso", target="target", render=False, print_camera_config=False, add_target_coordinates=False, add_agent_coordinates=False, end_epoch_on_turn=False, use_ctrl_cost=False, ctrl_factor=0.01, use_head_sensor=False, reward_function=None, done_function=None, env_dynamics=[], max_step=1024):
         """
         Initializes the environment
         Parameters:
@@ -32,7 +32,7 @@ class SingleAgent(gym.Env, MuJoCoParent):
             max_step: maximum number of steps in an epoch
         """
         gym.Env.__init__(self)
-        MuJoCoParent.__init__(self, xml_path, info_json, render, print_camera_config)
+        MuJoCoParent.__init__(self, xml_path, infoJson = infoJson, render=render)
 
         self.print_camera_config = print_camera_config
 
@@ -83,18 +83,32 @@ class SingleAgent(gym.Env, MuJoCoParent):
         Creats the observation space
         """
         # Dimensions of the actuator controls
+        space_dict = {"low":np.array([]), "high":np.array([])}
         bounds = self.model.actuator_ctrlrange.copy().astype(np.float32)
         low, high = bounds.T
         dimensions = len(low)
+        space_dict["low"] = np.array(low)
+        space_dict["high"] = np.array(high)
         # Dimensions of the sensor data
         dimensions += len(self.data.sensordata)
+        space_dict["low"] = np.concatenate([space_dict["low"], np.array([0, np.inf, np.inf, np.inf, 0])])
+        space_dict["high"] = np.concatenate([space_dict["high"], np.array([20, np.inf, np.inf, np.inf, 20])])
         # Dimensions of the joint positions and velocities
         dimensions += len(np.concatenate([self.data.qpos.flat, self.data.qvel.flat]))
+
+        space_dict["low"] = np.concatenate([space_dict["low"], np.full(shape=(len(self.data.qvel.flat),), fill_value=np.inf)])
+        space_dict["high"] = np.concatenate([space_dict["high"], np.full(shape=(len(self.data.qvel.flat),), fill_value=np.inf)])
+
+        space_dict["low"] = np.concatenate([space_dict["low"], np.full(shape=(len(self.data.qpos.flat),), fill_value=-70)])
+        space_dict["high"] = np.concatenate([space_dict["high"], np.full(shape=(len(self.data.qpos.flat),), fill_value=70)])
+
 
         # Add observations from environment dynamics
         for dynamic in self.env_dynamics:
             try:
                 reward, observations = dynamic(self, self.data, self.model)
+                space_dict["low"] = np.concatenate([space_dict["low"], np.full(shape=(len(observations),), fill_value=np.inf)])
+                space_dict["high"] = np.concatenate([space_dict["high"], np.full(shape=(len(observations),), fill_value=np.inf)])
                 dimensions += len(observations)
             except Exception as e:
                 print("ERROR -- env dynamics: " + dynamic.__name__)
@@ -103,9 +117,14 @@ class SingleAgent(gym.Env, MuJoCoParent):
         # Dimensions of the body positions and velocities
         if self.add_agent_coordinates:
             dimensions += 3
+            space_dict["low"] = np.concatenate([space_dict["low"], np.array([-70, -70, -70])])
+            space_dict["high"] = np.concatenate([space_dict["high"], np.array([70, 70, 70])])
         if self.add_target_coordinates:
             dimensions += 3
-        self.observation_space = spaces.Box(low=np.inf, high=np.inf, shape=(dimensions,), dtype=np.float32)
+            space_dict["low"] = np.concatenate([space_dict["low"], np.array([-70, -70, -70])])
+            space_dict["high"] = np.concatenate([space_dict["high"], np.array([70, 70, 70])])
+        # self.observation_space = spaces.Box(low=np.inf, high=np.inf, shape=(dimensions,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=space_dict["low"], high=space_dict["high"], dtype=np.float32)
 
     def reward(self, agent: str, target: str) -> float:
         """
