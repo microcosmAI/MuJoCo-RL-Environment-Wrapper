@@ -167,26 +167,30 @@ class SingleAgent(gym.Env, MuJoCoParent):
                 return False, True
         return False, True
 
-    def calculate_distance(self, object_1: str, object_2: str):
+    def calculate_distance(self, object_1, object_2):
         """
-        Calculates the distance between the agent and the target
+        Calculates the distance between object_1 and object_2.
+
         Parameters:
-            agent (str): name of the agent
-            target (str): name of the target
+            object_1 (str or array): name or coordinates of object_1
+            object_2 (str or array): name or coordinates of object_2
+            
         Returns:
-            distance (float): distance between the agent and the target
+            distance (float): distance between object_1 and object_2
         """
-        try:
-            coords_1 = self.data.body(object_1).xipos
-        except:
-            coords_1 = self.data.geom(object_1).xpos
-        try:
-            coords_2 = self.data.body(object_2).xipos
-        except:
-            coords_2 = self.data.geom(object_2).xpos
-        return math.dist(coords_1, coords_2)
+        def __name_to_coordinates(object):
+            if isinstance(object, str): 
+                try:
+                    object = self.data.body(object).xipos
+                except:
+                    object = self.data.geom(object).xpos
+            return object
 
+        object_1 = __name_to_coordinates(object_1) 
+        object_2 = __name_to_coordinates(object_2)
 
+        return math.dist(object_1, object_2)
+    
     def reset(self):
         """
         Resets the environment.
