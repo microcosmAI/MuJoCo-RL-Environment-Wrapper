@@ -318,3 +318,4 @@ class SingleAgent(gym.Env, MuJoCoParent):
     def state_vector(self):
         """Return the position and velocity joint states of the model"""
         return np.concatenate([self.data.qpos.flat, self.data.qvel.flat])
+    
