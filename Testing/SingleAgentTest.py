@@ -24,30 +24,7 @@ WARNING!!!!
 This file is used only for testing the purpose of the environment.
 """
 
-def reward(mujoco_gym, data, model) -> float:
-    """
-    Calculates the reward based only on the agent's distance to the target.
-
-    Parameters:
-        mujoco_gym (SingleAgent): instance of single agent environment
-
-    Returns:
-        reward (float): reward for the agent
-    """
-    distance = mujoco_gym.calculate_distance("torso", "target")
-    if mujoco_gym.lastDistance is None:
-        mujoco_gym.lastDistance = distance
-        reward = 0
-    else:
-        reward = mujoco_gym.lastDistance - distance
-        mujoco_gym.lastDistance = distance
-    if mujoco_gym.use_head_sensor:
-        if mujoco_gym.data.sensordata.flat[4] < 0.15:
-            reward = reward - 0.01
-    reward = reward * 10
-    return reward
-
-def test_reward(mujoco_gym, data, model) -> float:
+def test_reward(mujoco_gym, model, data) -> float:
     """
     Implementation of the test reward function.
     It contains two parts:
@@ -61,7 +38,6 @@ def test_reward(mujoco_gym, data, model) -> float:
     Returns:
         reward (float): reward for the agent
     """
-    reward = 0
     distance = mujoco_gym.calculate_distance("torso", mujoco_gym.data_store["current_target"])
     if "distance" not in mujoco_gym.data_store.keys():
         mujoco_gym.data_store["distance"] = distance
@@ -69,18 +45,18 @@ def test_reward(mujoco_gym, data, model) -> float:
     else:
         new_reward = mujoco_gym.data_store["distance"] - distance
         mujoco_gym.data_store["distance"] = distance
-    reward = reward + new_reward
+    reward = new_reward
 
     if "last_position" not in mujoco_gym.data_store.keys():
-        mujoco_gym.data_store["last_position"] = copy.deepcopy(data.body("torso").xipos)
+        mujoco_gym.data_store["last_position"] = copy.deepcopy(mujoco_gym.data.body("torso").xipos)
         new_reward = 0
     else:
         new_reward = mujoco_gym.calculate_distance("torso", mujoco_gym.data_store["last_position"])
-        mujoco_gym.data_store["last_position"] = copy.deepcopy(data.body("torso").xipos)
-        new_reward = new_reward * 10
-        if new_reward < 0.8:
+        mujoco_gym.data_store["last_position"] = copy.deepcopy(mujoco_gym.data.body("torso").xipos)
+        if new_reward < 0.08:
             new_reward = new_reward * -1
-    reward = reward + (new_reward * 0.6)
+        new_reward = new_reward * 6
+    reward = reward + new_reward
     return reward
 
 def train():
