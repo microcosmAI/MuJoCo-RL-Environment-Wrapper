@@ -29,7 +29,6 @@ class Pick_Up_Dynamic():
         distance = self.mujoco_gym.calculate_distance("torso", self.mujoco_gym.data_store["current_target"])
         if distance < 2:
             print("target reached")
-            reward = 0
             if self.mujoco_gym.data_store["inventory"][0] == 0:
                 self.mujoco_gym.data_store["inventory"][0] = 1
                 reward = 1

@@ -20,11 +20,8 @@ class Environment_Dynamic():
             target_coordinates (ndarray): coordinates of the target
         """
         if "targets" not in self.mujoco_gym.data_store.keys():
-            self.mujoco_gym.data_store["targets"] = []
-            for body_index in range(self.mujoco_gym.model.nbody):
-                if "target" in self.mujoco_gym.model.body(body_index).name:
-                    self.mujoco_gym.data_store["targets"].append(self.mujoco_gym.model.body(body_index).name)
-            self.mujoco_gym.data_store["current_target"] = self.mujoco_gym.data_store["targets"][random.randint(0, len(self.mujoco_gym.data_store["targets"]) - 1)]
+            self.mujoco_gym.data_store["targets"] = self.mujoco_gym.filterByTag("target")
+            self.mujoco_gym.data_store["current_target"] = self.mujoco_gym.data_store["targets"][random.randint(0, len(self.mujoco_gym.data_store["targets"]) - 1)]["name"]
         distance = self.mujoco_gym.calculate_distance("torso", self.mujoco_gym.data_store["current_target"])
         if distance < 1:
             self.mujoco_gym.data_store["current_target"] = self.mujoco_gym.data_store["targets"][random.randint(0, len(self.mujoco_gym.data_store["targets"]) - 1)]
