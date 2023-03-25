@@ -80,7 +80,7 @@ class SingleAgent(gym.Env, MuJoCoParent):
 
     def __createObservationSpace(self):
         """
-        Creats the observation space
+        Creates the observation space
         """
         # Dimensions of the actuator controls
         space_dict = {"low":np.array([]), "high":np.array([])}
@@ -104,12 +104,16 @@ class SingleAgent(gym.Env, MuJoCoParent):
 
 
         # Add observations from environment dynamics
-        for dynamic in self.env_dynamics:
+        for i in range(len(self.env_dynamics)):
+            self.env_dynamics[i] = self.env_dynamics[i](self) #overwrite class reference with instance of this class
+            dynamic = self.env_dynamics[i] 
             try:
-                reward, observations = dynamic(self, self.data, self.model)
-                space_dict["low"] = np.concatenate([space_dict["low"], np.full(shape=(len(observations),), fill_value=np.inf)])
-                space_dict["high"] = np.concatenate([space_dict["high"], np.full(shape=(len(observations),), fill_value=np.inf)])
-                dimensions += len(observations)
+                _, observations = dynamic.dynamic()
+                if len(observations) != len(dynamic.observation_space["low"]) or len(observations) != len(dynamic.observation_space["high"]):
+                    raise Exception("Observation space does not match received observations")
+                space_dict["low"] = np.concatenate([space_dict["low"], dynamic.observation_space["low"]])
+                space_dict["high"] = np.concatenate([space_dict["high"], dynamic.observation_space["high"]])
+                dimensions += len(dynamic.observation_space["low"])
             except Exception as e:
                 print("ERROR -- env dynamics: " + dynamic.__name__)
                 print(e)
@@ -167,26 +171,30 @@ class SingleAgent(gym.Env, MuJoCoParent):
                 return False, True
         return False, True
 
-    def calculate_distance(self, object_1: str, object_2: str):
+    def calculate_distance(self, object_1, object_2):
         """
-        Calculates the distance between the agent and the target
+        Calculates the distance between object_1 and object_2.
+
         Parameters:
-            agent (str): name of the agent
-            target (str): name of the target
+            object_1 (str or array): name or coordinates of object_1
+            object_2 (str or array): name or coordinates of object_2
+            
         Returns:
-            distance (float): distance between the agent and the target
+            distance (float): distance between object_1 and object_2
         """
-        try:
-            coords_1 = self.data.body(object_1).xipos
-        except:
-            coords_1 = self.data.geom(object_1).xpos
-        try:
-            coords_2 = self.data.body(object_2).xipos
-        except:
-            coords_2 = self.data.geom(object_2).xpos
-        return math.dist(coords_1, coords_2)
+        def __name_to_coordinates(object):
+            if isinstance(object, str): 
+                try:
+                    object = self.data.body(object).xipos
+                except:
+                    object = self.data.geom(object).xpos
+            return object
 
+        object_1 = __name_to_coordinates(object_1) 
+        object_2 = __name_to_coordinates(object_2)
 
+        return math.dist(object_1, object_2)
+    
     def reset(self):
         """
         Resets the environment.
@@ -196,7 +204,7 @@ class SingleAgent(gym.Env, MuJoCoParent):
         observations = self.__getObs()
 
         for dynamic in self.env_dynamics:
-            reward, new_observations = dynamic(self, self.data, self.model)
+            reward, new_observations = dynamic.dynamic()
             observations = np.concatenate([observations, new_observations])
 
         self.data_store = {}
@@ -229,7 +237,7 @@ class SingleAgent(gym.Env, MuJoCoParent):
         # healthy = False
 
         for dynamic in self.env_dynamics:
-            new_reward, obs = dynamic(self, self.data, self.model)
+            new_reward, obs = dynamic.dynamic()
             reward = reward + new_reward
             observations = np.concatenate((observations, obs))
 
@@ -314,3 +322,4 @@ class SingleAgent(gym.Env, MuJoCoParent):
     def state_vector(self):
         """Return the position and velocity joint states of the model"""
         return np.concatenate([self.data.qpos.flat, self.data.qvel.flat])
+    
