@@ -32,14 +32,21 @@ class MuJoCo_RL(MuJoCo_RL. gym.env):
         self.actionSpace = self.__createActionSpace()
         self.observationSpace = self.__createObservationSpace()
 
-    def __createActionSpace(self):
-        pass
+    def __createActionSpace(self) -> spaces.Box:
+        action_space = spaces.Box(low=-1, high=1, shape=(1,), dtype=np.float32)
+        return action_space
 
-    def __createObservationSpace(self):
-        pass
+    def __createObservationSpace(self) -> spaces.Box:
+        observation_space = spaces.Box(low=-1, high=1, shape=(1,), dtype=np.float32)
+        return observation_space
 
     def step(self, action: np.array):
-        pass
+        obs = np.array()
+        reward = 0
+        done = 0
+        info = {}
+        return obs, reward, done, info
 
-    def reset(self):
-        pass
+    def reset(self) -> np.array:
+        obs = np.array()
+        return obs

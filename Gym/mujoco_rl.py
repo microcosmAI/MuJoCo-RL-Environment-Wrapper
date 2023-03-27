@@ -38,29 +38,104 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
         self.observationSpace = self.__createObservationSpace()
         self.actionSpace = self.__createActionSpace()
 
-    def __createActionSpace(self):
-        pass
+    def __createActionSpace(self) -> dict:
+        """
+        Creates the action space for the current environment.
+        returns:
+            actionSpace (dict): a dictionary of action spaces for each agent
+        """
+        actionSpace = {}
+        return actionSpace
 
-    def __createObservationSpace(self):
-        pass
+    def __createObservationSpace(self) -> dict:
+        """
+        Creates the observation space for the current environment
+        returns:
+            observationSpace (dict): a dictionary of observation spaces for each agent
+        """
+        observationSpace = {}
+        return observationSpace
 
     def step(self, action: dict):
+        """
+        Applies the actions for each agent and returns the observations, rewards, terminations, truncations, and infos for each agent.
+        arguments:
+            action (dict): a dictionary of actions for each agent
+        returns:
+            observations (dict): a dictionary of observations for each agent
+            rewards (dict): a dictionary of rewards for each agent
+            terminations (dict): a dictionary of booleans indicating whether each agent is terminated
+            truncations (dict): a dictionary of booleans indicating whether each agent is truncated
+            infos (dict): a dictionary of dictionaries containing additional information for each agent
+        """
+        observations = {}
+        rewards = {}
+        terminations = {}
+        truncations = {}
+        infos = {}
+        return observations, rewards, terminations, truncations, infos
+
+    def reset(self, returnInfos=False):
+        """
+        Resets the environment and returns the observations for each agent.
+        arguments:
+            returnInfos (bool): whether to return the infos for each agent
+        returns:
+            observations (dict): a dictionary of observations for each agent
+            infos (dict): a dictionary of dictionaries containing additional information for each agent
+        """
+        observations = {}
+        infos = {}
+        if returnInfos:
+            return observations, infos
+        return observations
+
+    def getData(self, name: str) -> np.array:
+        """
+        Returns the data for an object/geom with the given name.
+        arguments:
+            name (str): the name of the object/geom
+        returns:
+            data (np.array): the data for the object/geom
+        """
         pass
 
-    def reset(self):
-        pass
+    def __getObservations(self) -> dict:
+        """
+        Returns the observations for each agent.
+        returns:
+            observations (dict): a dictionary of observations for each agent
+        """
+        observations = {}
+        return observations
 
-    def getData(self, name: str):
-        pass
-
-    def __getObservations(self):
-        pass
-
-    def __doneFunctions(self):
-        pass
+    def __doneFunctions(self) -> dict:
+        """
+        Executes the list of done functions and returns the terminations for each agent.
+        returns:
+            terminations (dict): a dictionary of booleans indicating whether each agent is terminated
+        """
+        terminations = {}
+        return terminations
 
     def __trunkationsFunctions(self):
-        pass
+        """
+        Executes the list of truncation functions and returns the truncations for each agent.
+        returns:
+            truncations (dict): a dictionary of booleans indicating whether each agent is truncated
+        """
+        truncations = {}
+        return truncations
 
     def __environmentFunctions(self):
-        pass
+        """
+        Executes the list of environment functions.
+        returns:
+            reward (dict): a dictionary of rewards for each agent
+            observations (dict): a dictionary of observations for each agent
+            infos (dict): a dictionary of dictionaries containing additional information for each agent
+        """
+        reward = {}
+        observations = {}
+        infos = {}
+        return reward, observations, infos
