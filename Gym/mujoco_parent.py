@@ -56,7 +56,11 @@ class MuJoCoParent():
         returns:
             np.array: The sensor data of the agent.
         """
-        pass
+        agentIndex = self.agents.index(agent)
+        sensorData = self.data.sensordata
+        sensorDevider = len(sensorData) / len(self.agents)
+        sensorData = sensorData[int(sensorDevider * agentIndex): int(sensorDevider * (agentIndex + 1))]
+        return sensorData
 
     def getCameraData(self, agent) -> np.array:
         """
@@ -76,7 +80,27 @@ class MuJoCoParent():
         returns:
             dict: The data of the object/geom.
         """
-        pass
+        try:
+            dataBody = self.data.body(name)
+            modelBody = self.model.body(name)
+            infos = {
+                "position": dataBody.xipos,
+                "mass": modelBody.mass,
+                "orientation": mat2eulerScipy(dataBody.xmat),
+                "id": dataBody.id,
+                "name": dataBody.name,
+                "type": "body",
+            }
+        except Exception as e:
+            dataBody = self.data.geom(name)
+            infos = {
+                "position": dataBody.xpos,
+                "orientation": mat2eulerScipy(dataBody.xmat),
+                "id": dataBody.id,
+                "name": dataBody.name,
+                "type": "geom"
+            }
+        return infos
 
     def distance(self, agent1, agent2) -> float:
         """

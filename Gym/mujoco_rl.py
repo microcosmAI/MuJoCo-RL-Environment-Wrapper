@@ -30,13 +30,26 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
         self.skipFrames = configDict.get("skipFrames", 1)
         self.maxSteps = configDict.get("maxSteps", 1024)
         self.rewardFunctions = configDict.get("rewardFunctions", [])
-        self.observationFunctions = configDict.get("observationFunctions", [])
         self.doneFunctions = configDict.get("doneFunctions", [])
+        self.environmentDynamics = configDict.get("environmentDynamics", [])
 
         self.dataStore = {}
 
+        self.__checkDynamics(self.environmentDynamics)
+
         self.observationSpace = self.__createObservationSpace()
         self.actionSpace = self.__createActionSpace()
+
+    # TO-DO Lisa: Implement those functions
+    def __checkDynamics(self, environmentDynamics):
+        raise Exception("Observation space doesn't match the observations")
+        pass
+
+    def __checkDoneFunkcions(self, doneFunctions):
+        raise Exception("Observation space doesn't match the observations")
+    
+    def __checkRewardFunctions(self, rewardFunctions):
+        raise Exception("Observation space doesn't match the observations")
 
     def __createActionSpace(self) -> dict:
         """
