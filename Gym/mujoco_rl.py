@@ -35,10 +35,23 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
 
         self.dataStore = {}
 
-        self.__checkDynamics(self.environmentDynamics)
+        MuJoCoParent.__init__(self, self.xmlPath, self.exportPath, render=self.renderMode, freeJoint=self.freeJoint, agents=self.agents, skipFrames=self.skipFrames)
+        ParallelEnv.__init__(self)
+
+        # self.__checkDynamics(self.environmentDynamics)
+        # self.__checkDoneFunkcions(self.doneFunctions)
+        # self.__checkRewardFunctions(self.rewardFunctions)
 
         self.observationSpace = self.__createObservationSpace()
         self.actionSpace = self.__createActionSpace()
+
+        if self.infoJson != "":
+            jsonFile = open(self.infoJson)
+            self.infoJson = json.load(jsonFile)
+            self.infoNameList = [object["name"] for object in self.infoJson["objects"]]
+        else:
+            self.infoJson = None
+            self.infoNameList = []
 
     # TO-DO Lisa: Implement those functions
     def __checkDynamics(self, environmentDynamics):
@@ -81,6 +94,7 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
             truncations (dict): a dictionary of booleans indicating whether each agent is truncated
             infos (dict): a dictionary of dictionaries containing additional information for each agent
         """
+        self.mujocoStep()
         observations = {}
         rewards = {}
         terminations = {}
@@ -102,6 +116,22 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
         if returnInfos:
             return observations, infos
         return observations
+    
+    def filterByTag(self, tag) -> list:
+        """
+        Filter environment for object with specific tag
+        Parameters:
+            tag (str): tag to be filtered for
+        Returns:
+            filtered (list): list of objects with the specified tag
+        """
+        filtered = []
+        for object in self.infoJson["objects"]:
+            if "tags" in object.keys():
+                if tag in object["tags"]:
+                    data = self.getData(object["name"])
+                    filtered.append(data)
+        return filtered
 
     def getData(self, name: str) -> np.array:
         """
@@ -111,7 +141,12 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
         returns:
             data (np.array): the data for the object/geom
         """
-        pass
+        data = MuJoCoParent.getData(self, name)
+        if name in self.infoNameList:
+            index = self.infoNameList.index(name)
+            for key in self.infoJson["objects"][index].keys():
+                data[key] = self.infoJson["objects"][index][key]
+        return data
 
     def __getObservations(self) -> dict:
         """

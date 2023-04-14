@@ -26,6 +26,12 @@ class MuJoCoParent():
         self.__cam = mj.MjvCamera()                      # Abstract camera
         self.__opt = mj.MjvOption()                      # visualization options
         self.frame = 0                                   # frame counter
+        self.render = render                             # whether to render the environment
+
+        if render:
+            self.cam = mj.MjvCamera()                    # Abstract camera
+            self.opt = mj.MjvOption()                    # visualization options
+            self.__initRender()
 
     def applyAction(self, action, skipFrames=1, export=False):
         """
@@ -39,6 +45,14 @@ class MuJoCoParent():
         for _ in range(skipFrames):
             mj.mj_step(self.model, self.data)
             self.frame += 1
+
+    def mujocoStep(self):
+        """
+        Performs a mujoco step.
+        """
+        mj.mj_step(self.model, self.data)
+        if self.render:
+            self.__render()
         
     def getSensorData(self) -> np.array:
         """
@@ -102,19 +116,98 @@ class MuJoCoParent():
             }
         return infos
 
-    def distance(self, agent1, agent2) -> float:
+    def distance(self, object_1, object_2) -> float:
         """
-        Calculates the distance between two objects/geoms
-        arguments:
-            agent1 (str): The name of the first object/geom.
-            agent2 (str): The name of the second object/geom.
-        returns:
-            float: The distance between the two objects/geoms.
+        Calculates the distance between object_1 and object_2.
+        Parameters:
+            object_1 (str or array): name or coordinates of object_1
+            object_2 (str or array): name or coordinates of object_2
+            
+        Returns:
+            distance (float): distance between object_1 and object_2
         """
-        pass
+        def __name_to_coordinates(object):
+            if isinstance(object, str): 
+                try:
+                    object = self.data.body(object).xipos
+                except:
+                    object = self.data.geom(object).xpos
+            return object
+
+        object_1 = __name_to_coordinates(object_1) 
+        object_2 = __name_to_coordinates(object_2)
+
+        return math.dist(object_1, object_2)
 
     def __exportJson(self):
         pass
 
+    def startRender(self):
+        """
+        Starts the render window.
+        """
+        if not self.render:
+            self.render = True
+            self.__render()
+
+    def endRender(self):
+        """
+        Ends the render window.
+        """
+        if self.render:
+            self.render = False
+            glfw.terminate()
+
+    def __initRender(self):
+        """
+        Starts the render window
+        """
+        glfw.init()
+        self.window = glfw.create_window(1200, 900, "Demo", None, None)
+        glfw.make_context_current(self.window)
+        glfw.swap_interval(1)
+
+        # initialize visualization data structures
+        mj.mjv_defaultCamera(self.cam)
+        mj.mjv_defaultOption(self.opt)
+        self.scene = mj.MjvScene(self.model, maxgeom=10000)
+        self.context = mj.MjrContext(self.model, mj.mjtFontScale.mjFONTSCALE_150.value)
+
+        glfw.set_scroll_callback(self.window, self.__scroll)
+        mj.set_mjcb_control(self.__controller)
+
     def __render(self):
+        """
+        Renders the environment. Only works if the environment is created with the render flag set to True.
+        Parameters:
+            mode (str): rendering mode
+        """
+        
+        # get framebuffer viewport
+        viewport_width, viewport_height = glfw.get_framebuffer_size(self.window)
+        viewport = mj.MjrRect(0, 0, viewport_width, viewport_height)
+
+        # Update scene and render
+        mj.mjv_updateScene(self.model, self.data, self.opt, None, self.cam,
+                        mj.mjtCatBit.mjCAT_ALL.value, self.scene)
+        mj.mjr_render(viewport, self.scene, self.context)
+
+        # swap OpenGL buffers (blocking call due to v-sync)
+        glfw.swap_buffers(self.window)
+
+        # process pending GUI events, call GLFW callbacks
+        glfw.poll_events()
+
+    def __scroll(self, window, xoffset, yoffset):
+        """
+        Makes the camera zoom in and out when rendered
+        Parameters:
+            window (glfw.window): the window
+            xoffset (float): x offset
+            yoffset (float): y offset
+        """
+        action = mj.mjtMouse.mjMOUSE_ZOOM
+        mj.mjv_moveCamera(self.model, action, 0.0, -0.05 * yoffset, self.scene, self.cam)
+
+    def __controller(self, model, data):
         pass
