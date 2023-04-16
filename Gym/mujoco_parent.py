@@ -14,11 +14,19 @@ import xml.etree.ElementTree as ET
 from scipy.spatial.transform import Rotation
 from helper import mat2eulerScipy
 from abc import ABC, abstractmethod
+import xmltodict
 
 class MuJoCoParent():
     def __init__(self, xmlPath, exportPath=None, render=False, freeJoint=False, agents=[], skipFrames=1):
         self.xmlPath = xmlPath
         self.exportPath = exportPath
+
+        #open text file in read mode
+        textFile = open(xmlPath, "r")
+
+        #read whole file to a string
+        data = textFile.read()
+        self.xmlDict = xmltodict.parse(data)
 
         # Load and create the MuJoCo Model and Data
         self.model = mj.MjModel.from_xml_path(xmlPath)   # MuJoCo model
@@ -32,6 +40,29 @@ class MuJoCoParent():
             self.cam = mj.MjvCamera()                    # Abstract camera
             self.opt = mj.MjvOption()                    # visualization options
             self.__initRender()
+
+    def getObservationSpaceMuJoCo(self, agent):
+        """
+        Returns the observation space of the environment from all the mujoco sensors.
+        returns:
+            np.array: The observation space of the environment.
+        """
+        observationSpace = {"low":[], "high":[]}
+        agentDict = self.__findInNestedDict(self.xmlDict, name=agent, filterKey="@name")
+        agentSites = self.__findInNestedDict(agentDict, parent="site")
+        agentSites = [site["@name"] for site in agentSites]
+        for site in agentSites:
+            agentSites = self.__findInNestedDict(self.xmlDict, parent="rangefinder", filterKey="@site", name=site)
+            for sensor in agentSites:
+                observationSpace["low"].append(-1)
+                observationSpace["high"].append(sensor["@cutoff"])
+            agentSites = self.__findInNestedDict(self.xmlDict, parent="frameyaxis", filterKey="@objname", name=site)
+            for sensor in agentSites:
+                for _ in range(3):
+                    observationSpace["low"].append(-360)
+                    observationSpace["high"].append(360)
+        print(observationSpace)
+        return observationSpace
 
     def applyAction(self, action, skipFrames=1, export=False):
         """
@@ -92,7 +123,7 @@ class MuJoCoParent():
         arguments:
             name (str): The name of the object/geom.
         returns:
-            dict: The data of the object/geom.
+            dictionary (str): The data of the object/geom.
         """
         try:
             dataBody = self.data.body(name)
@@ -208,6 +239,36 @@ class MuJoCoParent():
         """
         action = mj.mjtMouse.mjMOUSE_ZOOM
         mj.mjv_moveCamera(self.model, action, 0.0, -0.05 * yoffset, self.scene, self.cam)
+
+    def __findInNestedDict(self, dictionary, name=None, filterKey="@name", parent=None):
+        """
+        Finds a key in a nested dictionary.
+        Parameters:
+            dictionary (dict): The dictionary to search in.
+            key (str): The key to search for.
+        Returns:
+            dictionary (dict): The dictionary containing the key.
+        """
+        results = []
+        if isinstance(dictionary, dict):
+            if parent is not None and parent in dictionary.keys():
+                if isinstance(dictionary[parent], list):
+                    for item in dictionary[parent]:
+                        if (filterKey in item.keys() and item[filterKey] == name) or not name:
+                            results.append(item)
+                elif dictionary[parent][filterKey] == name or not name:
+                    results.append(dictionary[parent])
+            for key, value in dictionary.items():
+                if (key == filterKey or not filterKey) and (value == name or not name) and not parent:
+                    results.append(dictionary)
+                elif isinstance(value, (dict, list)):
+                    results.extend(self.__findInNestedDict(value, name, filterKey=filterKey, parent=parent))
+        elif isinstance(dictionary, list):
+            for item in dictionary:
+                if isinstance(item, (dict, list)):
+                    results.extend(self.__findInNestedDict(item, name, filterKey=filterKey, parent=parent))
+        return results
+
 
     def __controller(self, model, data):
         pass
