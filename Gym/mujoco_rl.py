@@ -66,16 +66,16 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
             reward, observations = environmentDynamicInstance.dynamic(self)
             # check observations
             if not len(environmentDynamicInstance.observation_space["low"]) == len(observations):
-                raise Exception(f"Observation, the first return variable of dynamic function, must match length of lower bound of observation space of {environmentDynamicInstance}")
+                raise Exception(f"Observation, the second return variable of dynamic function, must match length of lower bound of observation space of {environmentDynamicInstance}")
             if not np.all(environmentDynamicInstance.observation_space["low"] <= observations):
-                raise Exception(f"Observation, the first return variable of dynamic function, exceeds the lower bound on at least one axis of the observation space of {environmentDynamicInstance}")
+                raise Exception(f"Observation, the second return variable of dynamic function, exceeds the lower bound on at least one axis of the observation space of {environmentDynamicInstance}")
             if not len(environmentDynamicInstance.observation_space["high"]) == len(observations):
-                raise Exception(f"Observation, the first return variable of dynamic function, must match length of upper bound of observation space of {environmentDynamicInstance} must at least be three dimensional")
+                raise Exception(f"Observation, the second return variable of dynamic function, must match length of upper bound of observation space of {environmentDynamicInstance} must at least be three dimensional")
             if not np.all(environmentDynamicInstance.observation_space["high"] >= observations):
-                raise Exception(f"Observation, the first return variable of dynamic function, exceeds the upper bound on at least one axis of the observation space of observation space of {environmentDynamicInstance}")
+                raise Exception(f"Observation, the second return variable of dynamic function, exceeds the upper bound on at least one axis of the observation space of observation space of {environmentDynamicInstance}")
             # check reward
             if not isinstance(reward, float):
-                raise Exception(f"Reward, the second return variable of dynamic function of {environmentDynamicInstance}, must be a float")
+                raise Exception(f"Reward, the first return variable of dynamic function of {environmentDynamicInstance}, must be a float")
 
     def __checkDoneFunctions(self, doneFunctions):
         '''
