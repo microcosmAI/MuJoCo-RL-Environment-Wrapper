@@ -62,8 +62,8 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
             environmentDynamics (list): list of all environment dynamic classes
         '''
         for environmentDynamic in environmentDynamics:
-            environmentDynamicInstance = environmentDynamic()
-            reward, observations = environmentDynamicInstance.dynamic(self)
+            environmentDynamicInstance = environmentDynamic(self)
+            reward, observations = environmentDynamicInstance.dynamic()
             # check observations
             if not len(environmentDynamicInstance.observation_space["low"]) == len(observations):
                 raise Exception(f"Observation, the second return variable of dynamic function, must match length of lower bound of observation space of {environmentDynamicInstance}")
