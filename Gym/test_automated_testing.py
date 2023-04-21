@@ -10,7 +10,8 @@ import mock_dynamics
 
 @pytest.fixture
 def automated_testing_environment():
-    experiment_config_dict = {"xmlPath":f"{DIRECTORY}/s.mujoco_environment/Environments/multi_agent/info_example.json", 
+    experiment_config_dict = {"xmlPath":f"{DIRECTORY}/s.mujoco_environment/Environments/single_agent/ModelVis.xml", 
+                              "infoJson":f"{DIRECTORY}/s.mujoco_environment/Environments/single_agent/info_example.json", 
                               "renderMode":False}
     return MuJoCo_RL(configDict = experiment_config_dict) 
 
