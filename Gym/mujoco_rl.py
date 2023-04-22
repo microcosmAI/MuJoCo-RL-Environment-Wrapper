@@ -72,9 +72,12 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
             actionSpace (dict): a dictionary of action spaces for each agent
         """
         actionSpace = {}
+        newActionSpace = {}
         for agent in self.agents:
+            # Gets the action space from the MuJoCo environment
             actionSpace[agent] = MuJoCo_RL.getActionSpaceMuJoCo(self, agent)
-        return actionSpace
+            newActionSpace[agent] = Box(low=np.array(actionSpace[agent]["low"]), high=np.array(actionSpace[agent]["high"]))
+        return newActionSpace
 
     def __createObservationSpace(self) -> dict:
         """
@@ -83,9 +86,15 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
             observationSpace (dict): a dictionary of observation spaces for each agent
         """
         observationSpace = {}
+        newObservationSpace = {}
         for agent in self.agents:
             observationSpace[agent] = MuJoCo_RL.getObservationSpaceMuJoCo(self, agent)
-        return observationSpace
+            # Get the action space for the environment dynamics
+            for dynamic in self.environmentDynamics:
+                observationSpace[agent]["low"].append(dynamic.observation_space["low"])
+                observationSpace[agent]["high"].append(dynamic.observation_space["high"])
+            newObservationSpace[agent] = Box(low=np.array(observationSpace[agent]["low"]), high=np.array(observationSpace[agent]["high"]))
+        return newObservationSpace
 
     def step(self, action: dict):
         """

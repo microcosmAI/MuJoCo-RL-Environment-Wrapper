@@ -127,7 +127,7 @@ class MuJoCoParent():
                     actionSpace["high"].append(1)
                 indizes = [idx, idx+1, idx+4]
                 self.agentsActionIndex[agent] = indizes
-                return Box(low=np.array(actionSpace["low"]), high=np.array(actionSpace["high"]))
+                return actionSpace
             else:
                 raise Exception("The joint of agent {} has to be of type free".format(agent))
 
@@ -141,7 +141,6 @@ class MuJoCoParent():
                     ctrlrange = motor["@ctrlrange"].split(" ")
                     actionSpace["low"].append(float(ctrlrange[0]))
                     actionSpace["high"].append(float(ctrlrange[1]))
-            actionSpace = Box(low=np.array(actionSpace["low"]), high=np.array(actionSpace["high"]))
             self.agentsActionIndex[agent] = actionIndexs
             return actionSpace
 
