@@ -11,6 +11,7 @@ import math
 import torch as th
 import json
 import xml.etree.ElementTree as ET
+from gymnasium.spaces import Discrete, Box
 from scipy.spatial.transform import Rotation
 from helper import mat2eulerScipy
 from abc import ABC, abstractmethod
@@ -37,10 +38,13 @@ class MuJoCoParent():
         self.frame = 0                                   # frame counter
         self.render = render                             # whether to render the environment
 
+        self.freeJoint = freeJoint
+
         self.agentsActionIndex = {}
         self.agentsObservationIndex = {}
 
         if render:
+            self.previous_time = self.data.time
             self.cam = mj.MjvCamera()                    # Abstract camera
             self.opt = mj.MjvOption()                    # visualization options
             self.__initRender()
@@ -106,17 +110,35 @@ class MuJoCoParent():
         actionIndexs = []
         agentDict = self.__findInNestedDict(self.xmlDict, name=agent, filterKey="@name")
         agentJoints = self.__findInNestedDict(agentDict, parent="joint")
-        actuatorDict = self.__findInNestedDict(self.xmlDict, parent="actuator")
-        agentJoints = [joint["@name"] for joint in agentJoints]
-        for joint in agentJoints:
-            agentMotors = self.__findInNestedDict(self.xmlDict, parent="motor", filterKey="@joint", name=joint)
-            for motor in agentMotors:
-                actionIndexs.append(actuatorDict[0]["motor"].index(motor))
-                ctrlrange = motor["@ctrlrange"].split(" ")
-                actionSpace["low"].append(float(ctrlrange[0]))
-                actionSpace["high"].append(float(ctrlrange[1]))
-        self.agentsActionIndex[agent] = actionIndexs
-        return actionSpace
+        if self.freeJoint:
+            try:
+                freeJoint = agentDict[0]["joint"]
+            except:
+                raise Exception("The agent {} has to have a free joint".format(agent))
+            if freeJoint["@type"] == "free":
+                idx = self.model.joint(freeJoint["@name"]).dofadr[0]
+                for _ in range(3):
+                    actionSpace["low"].append(-1)
+                    actionSpace["high"].append(1)
+                indizes = [idx, idx+1, idx+4]
+                self.agentsActionIndex[agent] = indizes
+                return Box(low=np.array(actionSpace["low"]), high=np.array(actionSpace["high"]))
+            else:
+                raise Exception("The joint of agent {} has to be of type free".format(agent))
+
+        else:
+            actuatorDict = self.__findInNestedDict(self.xmlDict, parent="actuator")
+            agentJoints = [joint["@name"] for joint in agentJoints]
+            for joint in agentJoints:
+                agentMotors = self.__findInNestedDict(self.xmlDict, parent="motor", filterKey="@joint", name=joint)
+                for motor in agentMotors:
+                    actionIndexs.append(actuatorDict[0]["motor"].index(motor))
+                    ctrlrange = motor["@ctrlrange"].split(" ")
+                    actionSpace["low"].append(float(ctrlrange[0]))
+                    actionSpace["high"].append(float(ctrlrange[1]))
+            actionSpace = Box(low=np.array(actionSpace["low"]), high=np.array(actionSpace["high"]))
+            self.agentsActionIndex[agent] = actionIndexs
+            return actionSpace
 
     def applyAction(self, actions, skipFrames=1, export=False):
         """
@@ -127,12 +149,21 @@ class MuJoCoParent():
             export (bool): Whether to export the environment to a json file.
         """
         for agent in actions.keys():
-            actionIndexs = self.agentsActionIndex[agent]
-            for i in range(len(actionIndexs)):
-                self.data.ctrl[actionIndexs[i]] = actions[agent][i]
+            if self.freeJoint:
+                self.data.qvel[self.agentsActionIndex[agent]] = actions[agent] * 0.5
+            else:
+                try:
+                    actionIndexs = self.agentsActionIndex[agent]
+                    mujoco_actions = actions[agent][:len(self.agentsActionIndex[agent])]
+                    self.data.ctrl[actionIndexs] = mujoco_actions
+                except IndexError:
+                    print("The number of actions for agent {} is not correct.".format(agent))
         for _ in range(skipFrames):
             mj.mj_step(self.model, self.data)
             self.frame += 1
+        if self.render and self.data.time - self.previous_time > 1.0/30.0:
+            self.previous_time = self.data.time
+            self.__render()
 
     def mujocoStep(self):
         """

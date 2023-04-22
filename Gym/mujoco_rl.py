@@ -17,6 +17,7 @@ import functools
 import json
 from scipy.spatial.transform import Rotation 
 from mujoco_parent import MuJoCoParent
+import time
 
 class MuJoCo_RL(ParallelEnv, MuJoCoParent):
 
@@ -98,8 +99,8 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
             truncations (dict): a dictionary of booleans indicating whether each agent is truncated
             infos (dict): a dictionary of dictionaries containing additional information for each agent
         """
-        self.mujocoStep()
-        observations = {}
+        self.applyAction(action)
+        observations = {agent:self.getSensorData(agent) for agent in self.agents}
         rewards = {}
         terminations = {}
         truncations = {}
