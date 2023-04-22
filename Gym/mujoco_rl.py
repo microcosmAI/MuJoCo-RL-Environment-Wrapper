@@ -71,6 +71,8 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
             actionSpace (dict): a dictionary of action spaces for each agent
         """
         actionSpace = {}
+        for agent in self.agents:
+            actionSpace[agent] = MuJoCo_RL.getActionSpaceMuJoCo(self, agent)
         return actionSpace
 
     def __createObservationSpace(self) -> dict:
@@ -80,6 +82,8 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
             observationSpace (dict): a dictionary of observation spaces for each agent
         """
         observationSpace = {}
+        for agent in self.agents:
+            observationSpace[agent] = MuJoCo_RL.getObservationSpaceMuJoCo(self, agent)
         return observationSpace
 
     def step(self, action: dict):

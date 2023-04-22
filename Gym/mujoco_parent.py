@@ -15,6 +15,7 @@ from scipy.spatial.transform import Rotation
 from helper import mat2eulerScipy
 from abc import ABC, abstractmethod
 import xmltodict
+import collections
 
 class MuJoCoParent():
     def __init__(self, xmlPath, exportPath=None, render=False, freeJoint=False, agents=[], skipFrames=1):
@@ -36,6 +37,9 @@ class MuJoCoParent():
         self.frame = 0                                   # frame counter
         self.render = render                             # whether to render the environment
 
+        self.agentsActionIndex = {}
+        self.agentsObservationIndex = {}
+
         if render:
             self.cam = mj.MjvCamera()                    # Abstract camera
             self.opt = mj.MjvOption()                    # visualization options
@@ -50,29 +54,82 @@ class MuJoCoParent():
         observationSpace = {"low":[], "high":[]}
         agentDict = self.__findInNestedDict(self.xmlDict, name=agent, filterKey="@name")
         agentSites = self.__findInNestedDict(agentDict, parent="site")
-        agentSites = [site["@name"] for site in agentSites]
-        for site in agentSites:
-            agentSites = self.__findInNestedDict(self.xmlDict, parent="rangefinder", filterKey="@site", name=site)
-            for sensor in agentSites:
+        sensorDict = self.__findInNestedDict(self.xmlDict, parent="sensor")
+
+        indizes = {}
+        new_indizes = {}
+        index = 0
+
+        for sensorType in sensorDict:
+            for key in sensorType.keys():
+                for sensor in sensorType[key]:
+                    current = self.data.sensor(sensor["@name"])
+                    indizes[current.id] = {"name":sensor["@name"], "data":current.data}
+                    if "@site" in sensor.keys():
+                        indizes[current.id]["site"] = sensor["@site"]
+                        indizes[current.id]["type"] = "rangefinder"
+                        indizes[current.id]["cutoff"] = sensor["@cutoff"]
+                    if "@objtype" in sensor.keys():
+                        indizes[current.id]["site"] = sensor["@objname"]
+                        indizes[current.id]["type"] = "frameyaxis"
+
+        for item in sorted(indizes.items()):
+            new_indizes[item[1]["name"]] = {"indizes":[], "site":item[1]["site"], "type":item[1]["type"]}
+            if item[1]["type"] == "rangefinder":
+                new_indizes[item[1]["name"]]["cutoff"] = item[1]["cutoff"]
+            for i in range(len(item[1]["data"])):
+                new_indizes[item[1]["name"]]["indizes"].append(index)
+                index += 1
+
+        agentSensors = [current for current in new_indizes.values() if current["site"] in [site["@name"] for site in agentSites]]
+        agentIndizes = [current["indizes"] for current in agentSensors]
+        agentIndizes = [item for sublist in agentIndizes for item in sublist]
+        self.agentsObservationIndex[agent] = agentIndizes
+        for sensorType in agentSensors:
+            if sensorType["type"] == "rangefinder":
                 observationSpace["low"].append(-1)
-                observationSpace["high"].append(sensor["@cutoff"])
-            agentSites = self.__findInNestedDict(self.xmlDict, parent="frameyaxis", filterKey="@objname", name=site)
-            for sensor in agentSites:
+                observationSpace["high"].append(float(sensorType["cutoff"]))
+            elif sensorType["type"] == "frameyaxis":
                 for _ in range(3):
                     observationSpace["low"].append(-360)
                     observationSpace["high"].append(360)
-        print(observationSpace)
+        
         return observationSpace
+    
+    def getActionSpaceMuJoCo(self, agent):
+        """
+        Returns the action space of the environment from all the mujoco actuators.
+        returns:
+            np.array: The action space of the environment.
+        """
+        actionSpace = {"low":[], "high":[]}
+        actionIndexs = []
+        agentDict = self.__findInNestedDict(self.xmlDict, name=agent, filterKey="@name")
+        agentJoints = self.__findInNestedDict(agentDict, parent="joint")
+        actuatorDict = self.__findInNestedDict(self.xmlDict, parent="actuator")
+        agentJoints = [joint["@name"] for joint in agentJoints]
+        for joint in agentJoints:
+            agentMotors = self.__findInNestedDict(self.xmlDict, parent="motor", filterKey="@joint", name=joint)
+            for motor in agentMotors:
+                actionIndexs.append(actuatorDict[0]["motor"].index(motor))
+                ctrlrange = motor["@ctrlrange"].split(" ")
+                actionSpace["low"].append(float(ctrlrange[0]))
+                actionSpace["high"].append(float(ctrlrange[1]))
+        self.agentsActionIndex[agent] = actionIndexs
+        return actionSpace
 
-    def applyAction(self, action, skipFrames=1, export=False):
+    def applyAction(self, actions, skipFrames=1, export=False):
         """
         Applies the actions to the environment.
         arguments:
-            action (np.array): The action to be applied to the environment.
+            action (dict): The action of every agent to be applied to the environment.
             skipFrames (int): The number of frames to skip after applying the action.
             export (bool): Whether to export the environment to a json file.
         """
-        self.data.ctrl = action
+        for agent in actions.keys():
+            actionIndexs = self.agentsActionIndex[agent]
+            for i in range(len(actionIndexs)):
+                self.data.ctrl[actionIndexs[i]] = actions[agent][i]
         for _ in range(skipFrames):
             mj.mj_step(self.model, self.data)
             self.frame += 1
@@ -240,6 +297,9 @@ class MuJoCoParent():
         action = mj.mjtMouse.mjMOUSE_ZOOM
         mj.mjv_moveCamera(self.model, action, 0.0, -0.05 * yoffset, self.scene, self.cam)
 
+    # def __getSensors(self, xmlDict):
+        
+
     def __findInNestedDict(self, dictionary, name=None, filterKey="@name", parent=None):
         """
         Finds a key in a nested dictionary.
@@ -256,7 +316,7 @@ class MuJoCoParent():
                     for item in dictionary[parent]:
                         if (filterKey in item.keys() and item[filterKey] == name) or not name:
                             results.append(item)
-                elif dictionary[parent][filterKey] == name or not name:
+                elif not name or dictionary[parent][filterKey] == name:
                     results.append(dictionary[parent])
             for key, value in dictionary.items():
                 if (key == filterKey or not filterKey) and (value == name or not name) and not parent:
