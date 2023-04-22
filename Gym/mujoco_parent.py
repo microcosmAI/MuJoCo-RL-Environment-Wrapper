@@ -64,6 +64,7 @@ class MuJoCoParent():
         new_indizes = {}
         index = 0
 
+        # Stores all the sensors and their indizes in the mujoco data object in a dictionary.
         for sensorType in sensorDict:
             for key in sensorType.keys():
                 for sensor in sensorType[key]:
@@ -77,6 +78,7 @@ class MuJoCoParent():
                         indizes[current.id]["site"] = sensor["@objname"]
                         indizes[current.id]["type"] = "frameyaxis"
 
+        # Filters for the sensors that are on the agent and sorts them by number.
         for item in sorted(indizes.items()):
             new_indizes[item[1]["name"]] = {"indizes":[], "site":item[1]["site"], "type":item[1]["type"]}
             if item[1]["type"] == "rangefinder":
@@ -85,10 +87,13 @@ class MuJoCoParent():
                 new_indizes[item[1]["name"]]["indizes"].append(index)
                 index += 1
 
+        # Stores the indizes of the sensors that are on the agent.
         agentSensors = [current for current in new_indizes.values() if current["site"] in [site["@name"] for site in agentSites]]
         agentIndizes = [current["indizes"] for current in agentSensors]
         agentIndizes = [item for sublist in agentIndizes for item in sublist]
         self.agentsObservationIndex[agent] = agentIndizes
+
+        # Creates the observation space from the sensors.
         for sensorType in agentSensors:
             if sensorType["type"] == "rangefinder":
                 observationSpace["low"].append(-1)
