@@ -158,10 +158,7 @@ class MuJoCoParent():
         returns:
             np.array: The sensor data of the agent.
         """
-        agentIndex = self.agents.index(agent)
-        sensorData = self.data.sensordata
-        sensorDevider = len(sensorData) / len(self.agents)
-        sensorData = sensorData[int(sensorDevider * agentIndex): int(sensorDevider * (agentIndex + 1))]
+        sensorData = [self.data.sensordata[i] for i in self.agentsObservationIndex[agent]]
         return sensorData
 
     def getCameraData(self, agent) -> np.array:
