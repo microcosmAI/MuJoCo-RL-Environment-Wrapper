@@ -33,10 +33,11 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
         self.rewardFunctions = configDict.get("rewardFunctions", [])
         self.doneFunctions = configDict.get("doneFunctions", [])
         self.environmentDynamics = configDict.get("environmentDynamics", [])
+        self.agentCameras = configDict.get("agentCameras", False)
 
         self.dataStore = {}
 
-        MuJoCoParent.__init__(self, self.xmlPath, self.exportPath, render=self.renderMode, freeJoint=self.freeJoint, agents=self.agents, skipFrames=self.skipFrames)
+        MuJoCoParent.__init__(self, self.xmlPath, self.exportPath, render=self.renderMode, freeJoint=self.freeJoint, agentCameras=self.agentCameras, agents=self.agents, skipFrames=self.skipFrames)
         ParallelEnv.__init__(self)
 
         # self.__checkDynamics(self.environmentDynamics)

@@ -17,9 +17,11 @@ from helper import mat2eulerScipy
 from abc import ABC, abstractmethod
 import xmltodict
 import collections
+import ctypes
+import cv2
 
 class MuJoCoParent():
-    def __init__(self, xmlPath, exportPath=None, render=False, freeJoint=False, agents=[], skipFrames=1):
+    def __init__(self, xmlPath, exportPath=None, render=False, freeJoint=False, agents=[], agentCameras=False, skipFrames=1):
         self.xmlPath = xmlPath
         self.exportPath = exportPath
 
@@ -39,6 +41,9 @@ class MuJoCoParent():
         self.render = render                             # whether to render the environment
 
         self.freeJoint = freeJoint
+        self.agentCameras = agentCameras
+
+        self.rgbSensors = {}
 
         self.agentsActionIndex = {}
         self.agentsObservationIndex = {}
@@ -48,6 +53,7 @@ class MuJoCoParent():
             self.cam = mj.MjvCamera()                    # Abstract camera
             self.opt = mj.MjvOption()                    # visualization options
             self.__initRender()
+            self.__initRGBSensor()
 
     def getObservationSpaceMuJoCo(self, agent):
         """
@@ -59,6 +65,9 @@ class MuJoCoParent():
         agentDict = self.__findInNestedDict(self.xmlDict, name=agent, filterKey="@name")
         agentSites = self.__findInNestedDict(agentDict, parent="site")
         sensorDict = self.__findInNestedDict(self.xmlDict, parent="sensor")
+
+        if self.agentCameras:
+            self.__findAgentCamera(agentDict, agent)
 
         indizes = {}
         new_indizes = {}
@@ -303,6 +312,71 @@ class MuJoCoParent():
         if self.render:
             self.render = False
             glfw.terminate()
+
+    def __initRGBSensor(self):
+        """
+        Initializes the rgb sensor.
+        """
+        glfw.init()
+        glfw.window_hint(glfw.RESIZABLE, glfw.FALSE)
+        glfw.window_hint(glfw.VISIBLE, glfw.FALSE)
+        self.sensorWindow = glfw.create_window(320, 320, "RGB Sensor", None, None)
+
+    def __findAgentCamera(self, agentDict, agent):
+        """
+        Finds the camera of a specific agent.
+        arguments:
+            agent (str): The name of the agent.
+        returns:
+            list: The names of the cameras.
+        """
+        cameras = self.__findInNestedDict(agentDict, parent="camera")
+
+        self.rgbSensors[agent] = []
+        for camera in cameras:
+            self.rgbSensors[agent].append(camera["@name"])
+
+    def getCameraData(self, agent) -> np.array:
+        """
+        Returns the camera data of a specific camera.
+        arguments:
+            camera (str): The name of the camera.
+        returns:
+            np.array: The camera data of the camera.
+        """
+        allCameraData = []
+        for camera in self.rgbSensors[agent]:
+            # renderer = mj.Renderer(self.model)
+            # renderer.update_scene(self.data, camera=camera)
+            # data = np.array(renderer.render())
+            # allCameraData.append(data)
+            # get framebuffer viewport
+            print(self.model.camera(camera).id)
+            print(type(self.model.camera(camera)))
+            sensor = mj.MjvCamera()
+            sensor.type = 2
+            sensor.fixedcamid = self.model.camera(camera).id
+            viewport_width, viewport_height = glfw.get_framebuffer_size(self.sensorWindow)
+            viewport = mj.MjrRect(0, 0, viewport_width, viewport_height)
+
+            # Update scene and render
+            mj.mjv_updateScene(self.model, self.data, self.opt, None, sensor,
+                            mj.mjtCatBit.mjCAT_ALL.value, self.scene)
+            mj.mjr_render(viewport, self.scene, self.context)
+            data = np.array(self.__get_RGBD_buffer(self.model, viewport, self.context))
+            allCameraData.append(data.reshape((640, 640, 3)))
+        return np.array(allCameraData)
+
+    def __get_RGBD_buffer(self, model, viewport, context):
+        # Use preallocated buffer to fetch color buffer and depth buffer in OpenGL
+        color_buffer = (ctypes.c_ubyte * (viewport.height * viewport.width * 3))()
+        depth_buffer = (ctypes.c_float * (viewport.height * viewport.width * 4))()
+        mj.mjr_readPixels(color_buffer, depth_buffer, viewport, context)
+
+        img_size = (viewport.width, viewport.height)
+        rgb = color_buffer
+        color_image = np.copy(rgb)
+        return color_image
 
     def __initRender(self):
         """
