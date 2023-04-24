@@ -258,6 +258,32 @@ class MuJoCoParent():
         object_2 = __name_to_coordinates(object_2)
 
         return math.dist(object_1, object_2)
+    
+    def collision(self, geom_1, geom_2) -> bool:
+        """
+        Checks if geom_1 and geom_2 are colliding.
+        Parameters:
+            geom_1 (str or int): name or id of geom_1
+            geom_2 (str or int): name or id of geom_2
+            
+        Returns:
+            collision (bool): True if geom_1 and geom_2 are colliding, False otherwise
+        """
+        try:
+            if isinstance(geom_1, str):
+                geom_1 = self.data.geom(geom_1).id
+        except Exception as e:
+            raise Exception("Collision object {} not found in data".format(geom_1))
+        try:
+            if isinstance(geom_2, str):
+                geom_2 = self.data.geom(geom_2).id
+        except Exception as e:
+            raise Exception("Collision object {} not found in data".format(geom_2))
+        try:
+            collision = [self.data.contact[i].geom1 == geom_1 and self.data.contact[i].geom2 == geom_2 for i in range(self.data.ncon)]
+        except Exception as e:
+            raise Exception("One of the two objects {}, {} not found in data".format(geom_1, geom_2))
+        return any(collision)
 
     def __exportJson(self):
         pass
@@ -328,8 +354,6 @@ class MuJoCoParent():
         """
         action = mj.mjtMouse.mjMOUSE_ZOOM
         mj.mjv_moveCamera(self.model, action, 0.0, -0.05 * yoffset, self.scene, self.cam)
-
-    # def __getSensors(self, xmlDict):
         
 
     def __findInNestedDict(self, dictionary, name=None, filterKey="@name", parent=None):
