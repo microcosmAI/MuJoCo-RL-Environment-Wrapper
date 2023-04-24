@@ -42,18 +42,29 @@ class MuJoCoParent():
 
         self.freeJoint = freeJoint
         self.agentCameras = agentCameras
+        self.sensorResoultion = (64, 64)
 
         self.rgbSensors = {}
 
         self.agentsActionIndex = {}
         self.agentsObservationIndex = {}
 
+        if render or agentCameras:
+            glfw.init()
+            self.opt = mj.MjvOption()
+            self.window = glfw.create_window(1200, 900, "Demo", None, None)
+            glfw.make_context_current(self.window)
+            glfw.swap_interval(1)
+            self.scene = mj.MjvScene(self.model, maxgeom=10000)
+            self.context = mj.MjrContext(self.model, mj.mjtFontScale.mjFONTSCALE_150.value)
+
+        if agentCameras:
+            self.__initRGBSensor()
+
         if render:
             self.previous_time = self.data.time
             self.cam = mj.MjvCamera()                    # Abstract camera
-            self.opt = mj.MjvOption()                    # visualization options
             self.__initRender()
-            self.__initRGBSensor()
 
     def getObservationSpaceMuJoCo(self, agent):
         """
@@ -317,10 +328,9 @@ class MuJoCoParent():
         """
         Initializes the rgb sensor.
         """
-        glfw.init()
         glfw.window_hint(glfw.RESIZABLE, glfw.FALSE)
         glfw.window_hint(glfw.VISIBLE, glfw.FALSE)
-        self.sensorWindow = glfw.create_window(320, 320, "RGB Sensor", None, None)
+        self.sensorWindow = glfw.create_window(self.sensorResoultion[0], self.sensorResoultion[1], "RGB Sensor", None, None)
 
     def __findAgentCamera(self, agentDict, agent):
         """
@@ -346,13 +356,6 @@ class MuJoCoParent():
         """
         allCameraData = []
         for camera in self.rgbSensors[agent]:
-            # renderer = mj.Renderer(self.model)
-            # renderer.update_scene(self.data, camera=camera)
-            # data = np.array(renderer.render())
-            # allCameraData.append(data)
-            # get framebuffer viewport
-            print(self.model.camera(camera).id)
-            print(type(self.model.camera(camera)))
             sensor = mj.MjvCamera()
             sensor.type = 2
             sensor.fixedcamid = self.model.camera(camera).id
@@ -364,7 +367,7 @@ class MuJoCoParent():
                             mj.mjtCatBit.mjCAT_ALL.value, self.scene)
             mj.mjr_render(viewport, self.scene, self.context)
             data = np.array(self.__get_RGBD_buffer(self.model, viewport, self.context))
-            allCameraData.append(data.reshape((640, 640, 3)))
+            allCameraData.append(data.reshape((viewport_width, viewport_height, 3)))
         return np.array(allCameraData)
 
     def __get_RGBD_buffer(self, model, viewport, context):
@@ -373,7 +376,6 @@ class MuJoCoParent():
         depth_buffer = (ctypes.c_float * (viewport.height * viewport.width * 4))()
         mj.mjr_readPixels(color_buffer, depth_buffer, viewport, context)
 
-        img_size = (viewport.width, viewport.height)
         rgb = color_buffer
         color_image = np.copy(rgb)
         return color_image
@@ -382,16 +384,10 @@ class MuJoCoParent():
         """
         Starts the render window
         """
-        glfw.init()
-        self.window = glfw.create_window(1200, 900, "Demo", None, None)
-        glfw.make_context_current(self.window)
-        glfw.swap_interval(1)
 
         # initialize visualization data structures
         mj.mjv_defaultCamera(self.cam)
         mj.mjv_defaultOption(self.opt)
-        self.scene = mj.MjvScene(self.model, maxgeom=10000)
-        self.context = mj.MjrContext(self.model, mj.mjtFontScale.mjFONTSCALE_150.value)
 
         glfw.set_scroll_callback(self.window, self.__scroll)
         mj.set_mjcb_control(self.__controller)
