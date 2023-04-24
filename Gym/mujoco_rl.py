@@ -35,14 +35,18 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
         self.environmentDynamics = configDict.get("environmentDynamics", [])
         self.agentCameras = configDict.get("agentCameras", False)
 
-        self.dataStore = {}
+        self.timestep = 0
+
+        self.dataStore = {agent:{} for agent in self.agents}
 
         MuJoCoParent.__init__(self, self.xmlPath, self.exportPath, render=self.renderMode, freeJoint=self.freeJoint, agentCameras=self.agentCameras, agents=self.agents, skipFrames=self.skipFrames)
         ParallelEnv.__init__(self)
 
-        # self.__checkDynamics(self.environmentDynamics)
-        # self.__checkDoneFunkcions(self.doneFunctions)
-        # self.__checkRewardFunctions(self.rewardFunctions)
+        self.__checkDynamics(self.environmentDynamics)
+        self.__checkDoneFunkcions(self.doneFunctions)
+        self.__checkRewardFunctions(self.rewardFunctions)
+
+        self.environmentDynamics = [dynamic(self) for dynamic in self.environmentDynamics]
 
         self.observationSpace = self.__createObservationSpace()
         self.actionSpace = self.__createActionSpace()
@@ -57,14 +61,13 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
 
     # TO-DO Lisa: Implement those functions
     def __checkDynamics(self, environmentDynamics):
-        raise Exception("Observation space doesn't match the observations")
         pass
 
     def __checkDoneFunkcions(self, doneFunctions):
-        raise Exception("Observation space doesn't match the observations")
+        pass
     
     def __checkRewardFunctions(self, rewardFunctions):
-        raise Exception("Observation space doesn't match the observations")
+        pass
 
     def __createActionSpace(self) -> dict:
         """
@@ -92,8 +95,9 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
             observationSpace[agent] = MuJoCo_RL.getObservationSpaceMuJoCo(self, agent)
             # Get the action space for the environment dynamics
             for dynamic in self.environmentDynamics:
-                observationSpace[agent]["low"].append(dynamic.observation_space["low"])
-                observationSpace[agent]["high"].append(dynamic.observation_space["high"])
+                observationSpace[agent]["low"] += dynamic.observation_space["low"]
+                observationSpace[agent]["high"] += dynamic.observation_space["high"]
+            print(observationSpace[agent])
             newObservationSpace[agent] = Box(low=np.array(observationSpace[agent]["low"]), high=np.array(observationSpace[agent]["high"]))
         return newObservationSpace
 
@@ -111,10 +115,28 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
         """
         self.applyAction(action)
         observations = {agent:self.getSensorData(agent) for agent in self.agents}
-        rewards = {}
-        terminations = {}
+        rewards = {agent:0 for agent in self.agents}
+
+        for dynamic in self.environmentDynamics:
+            for agent in self.agents:
+                reward, obs = dynamic.dynamic(agent)
+                observations[agent] = np.concatenate((observations[agent], obs))
+                rewards[agent] += reward
+
+        for reward in self.rewardFunctions:
+            rewards = {agent:rewards[agent] + reward(self, agent) for agent in self.agents}
+
+        terminations = self.__checkTerminations()
+
         truncations = {}
-        infos = {}
+        if len(self.doneFunctions) == 0:
+            truncations = {agent:terminations[agent] for agent in self.agents}
+        else:
+            for done in self.doneFunctions:
+                truncations = {agent:terminations[agent] or done(self, agent) for agent in self.agents}
+
+        infos = {agent:{} for agent in self.agents}
+        self.timestep += 1
         return observations, rewards, terminations, truncations, infos
 
     def reset(self, returnInfos=False):
@@ -126,8 +148,10 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
             observations (dict): a dictionary of observations for each agent
             infos (dict): a dictionary of dictionaries containing additional information for each agent
         """
-        observations = {}
-        infos = {}
+        self.dataStore = {agent:{} for agent in self.agents}
+        self.timestep = 0
+        observations = self.__getObservations()
+        infos = {agent:{} for agent in self.agents}
         if returnInfos:
             return observations, infos
         return observations
@@ -172,13 +196,14 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
         observations = {}
         return observations
 
-    def __doneFunctions(self) -> dict:
+    def __checkTerminations(self) -> dict:
         """
-        Executes the list of done functions and returns the terminations for each agent.
-        returns:
-            terminations (dict): a dictionary of booleans indicating whether each agent is terminated
+        Checks whether each agent is terminated.
         """
-        terminations = {}
+        if self.timestep >= self.maxSteps:
+            terminations = {agent:True for agent in self.agents}
+        else:
+            terminations = {agent:False for agent in self.agents}
         return terminations
 
     def __trunkationsFunctions(self):
