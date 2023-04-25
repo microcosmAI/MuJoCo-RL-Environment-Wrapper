@@ -18,8 +18,9 @@ import json
 from scipy.spatial.transform import Rotation 
 from mujoco_parent import MuJoCoParent
 import time
+from ray.rllib.env import MultiAgentEnv
 
-class MuJoCo_RL(ParallelEnv, MuJoCoParent):
+class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
 
     def __init__(self, configDict: dict):
         self.agents = configDict.get("agents", [])
@@ -40,7 +41,7 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
         self.dataStore = {agent:{} for agent in self.agents}
 
         MuJoCoParent.__init__(self, self.xmlPath, self.exportPath, render=self.renderMode, freeJoint=self.freeJoint, agentCameras=self.agentCameras, agents=self.agents, skipFrames=self.skipFrames)
-        ParallelEnv.__init__(self)
+        MultiAgentEnv.__init__(self)
 
         self.__checkDynamics(self.environmentDynamics)
         self.__checkDoneFunkcions(self.doneFunctions)
@@ -48,8 +49,10 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
 
         self.environmentDynamics = [dynamic(self) for dynamic in self.environmentDynamics]
 
-        self.observationSpace = self.__createObservationSpace()
-        self.actionSpace = self.__createActionSpace()
+        self._observation_space = self.__createObservationSpace()
+        self.observation_space = self._observation_space[list(self._observation_space.keys())[0]]
+        self._action_space = self.__createActionSpace()
+        self.action_space = self._action_space[list(self._action_space.keys())[0]]
 
         if self.infoJson != "":
             jsonFile = open(self.infoJson)
@@ -97,7 +100,6 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
             for dynamic in self.environmentDynamics:
                 observationSpace[agent]["low"] += dynamic.observation_space["low"]
                 observationSpace[agent]["high"] += dynamic.observation_space["high"]
-            print(observationSpace[agent])
             newObservationSpace[agent] = Box(low=np.array(observationSpace[agent]["low"]), high=np.array(observationSpace[agent]["high"]))
         return newObservationSpace
 
@@ -134,12 +136,13 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
         else:
             for done in self.doneFunctions:
                 truncations = {agent:terminations[agent] or done(self, agent) for agent in self.agents}
+        truncations["__all__"] = all(truncations.values())
 
         infos = {agent:{} for agent in self.agents}
         self.timestep += 1
-        return observations, rewards, terminations, truncations, infos
+        return observations, rewards, truncations, infos
 
-    def reset(self, returnInfos=False):
+    def reset(self, returnInfos=False, seed=None, options=None):
         """
         Resets the environment and returns the observations for each agent.
         arguments:
@@ -148,9 +151,14 @@ class MuJoCo_RL(ParallelEnv, MuJoCoParent):
             observations (dict): a dictionary of observations for each agent
             infos (dict): a dictionary of dictionaries containing additional information for each agent
         """
+        observations = {agent:self.getSensorData(agent) for agent in self.agents}
+
+        for dynamic in self.environmentDynamics:
+            for agent in self.agents:
+                reward, obs = dynamic.dynamic(agent)
+                observations[agent] = np.concatenate((observations[agent], obs))
         self.dataStore = {agent:{} for agent in self.agents}
         self.timestep = 0
-        observations = self.__getObservations()
         infos = {agent:{} for agent in self.agents}
         if returnInfos:
             return observations, infos
