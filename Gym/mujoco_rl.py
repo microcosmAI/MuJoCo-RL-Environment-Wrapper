@@ -38,6 +38,8 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
 
         self.timestep = 0
 
+        self.actionRouting = {"physical":[],"dynamic":{}}
+
         self.dataStore = {agent:{} for agent in self.agents}
 
         MuJoCoParent.__init__(self, self.xmlPath, self.exportPath, render=self.renderMode, freeJoint=self.freeJoint, agentCameras=self.agentCameras, agents=self.agents, skipFrames=self.skipFrames)
@@ -83,6 +85,13 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
         for agent in self.agents:
             # Gets the action space from the MuJoCo environment
             actionSpace[agent] = MuJoCo_RL.getActionSpaceMuJoCo(self, agent)
+            self.actionRouting["physical"] = [0, len(actionSpace[agent]["low"])]
+            for dynamic in self.environmentDynamics:
+                dynActionSpace = dynamic.action_space
+                self.actionRouting["dynamic"][dynamic.__class__.__name__] = [len(actionSpace[agent]["low"]), len(actionSpace[agent]["low"])+len(dynActionSpace["low"])]
+                actionSpace[agent]["low"] += dynActionSpace["low"]
+                actionSpace[agent]["high"] += dynActionSpace["high"]
+
             newActionSpace[agent] = Box(low=np.array(actionSpace[agent]["low"]), high=np.array(actionSpace[agent]["high"]))
         return newActionSpace
 
@@ -115,13 +124,16 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
             truncations (dict): a dictionary of booleans indicating whether each agent is truncated
             infos (dict): a dictionary of dictionaries containing additional information for each agent
         """
-        self.applyAction(action)
+        mujocoActions = {key:action[key][self.actionRouting["physical"][0]:self.actionRouting["physical"][1]] for key in action.keys()}
+        self.applyAction(mujocoActions)
         observations = {agent:self.getSensorData(agent) for agent in self.agents}
         rewards = {agent:0 for agent in self.agents}
 
         for dynamic in self.environmentDynamics:
             for agent in self.agents:
-                reward, obs = dynamic.dynamic(agent)
+                dynamicIndizes = self.actionRouting["dynamic"][dynamic.__class__.__name__]
+                dynamicActions = action[agent][dynamicIndizes[0]:dynamicIndizes[1]]
+                reward, obs = dynamic.dynamic(agent, dynamicActions)
                 observations[agent] = np.concatenate((observations[agent], obs))
                 rewards[agent] += reward
 
@@ -140,9 +152,11 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
 
         infos = {agent:{} for agent in self.agents}
         self.timestep += 1
-        return observations, rewards, truncations, infos
+        if self.timestep % 20 == 0:
+            print(self.timestep / self.maxSteps)
+        return observations, rewards, terminations, truncations, infos
 
-    def reset(self, returnInfos=False, seed=None, options=None):
+    def reset(self, *, seed=None, options=None):
         """
         Resets the environment and returns the observations for each agent.
         arguments:
@@ -155,14 +169,14 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
 
         for dynamic in self.environmentDynamics:
             for agent in self.agents:
-                reward, obs = dynamic.dynamic(agent)
+                actions = dynamic.action_space["low"]
+                reward, obs = dynamic.dynamic(agent, actions)
                 observations[agent] = np.concatenate((observations[agent], obs))
         self.dataStore = {agent:{} for agent in self.agents}
         self.timestep = 0
         infos = {agent:{} for agent in self.agents}
-        if returnInfos:
-            return observations, infos
-        return observations
+        return observations, infos
+        # return observations
     
     def filterByTag(self, tag) -> list:
         """
@@ -212,6 +226,9 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
             terminations = {agent:True for agent in self.agents}
         else:
             terminations = {agent:False for agent in self.agents}
+        terminations["__all__"] = all(terminations.values())
+        if terminations["__all__"]:
+            print("Episode done")
         return terminations
 
     def __trunkationsFunctions(self):

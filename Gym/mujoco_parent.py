@@ -145,7 +145,7 @@ class MuJoCoParent():
                 for _ in range(3):
                     actionSpace["low"].append(-1)
                     actionSpace["high"].append(1)
-                indizes = [idx, idx+1, idx+4]
+                indizes = [idx, idx+1, idx+5]
                 self.agentsActionIndex[agent] = indizes
                 return actionSpace
             else:
