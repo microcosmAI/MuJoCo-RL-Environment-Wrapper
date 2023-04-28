@@ -1,5 +1,6 @@
 from scipy.spatial.transform import Rotation  
 import numpy as np
+import collections.abc
 
 def mat2eulerScipy(mat):
         """
@@ -14,3 +15,11 @@ def mat2eulerScipy(mat):
         euler = r.as_euler("zyx",degrees=True)
         euler = np.array([euler[0], euler[1], euler[2]])
         return euler
+
+def updateDeep(d, u):
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = updateDeep(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d

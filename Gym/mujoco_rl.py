@@ -1,24 +1,15 @@
-import functools
-import gymnasium
 import numpy as np
 from gymnasium.spaces import Discrete, Box
-from pettingzoo.test import parallel_api_test
-from pettingzoo import ParallelEnv
-from pettingzoo.utils import agent_selector, wrappers
-from pettingzoo.utils import parallel_to_aec, wrappers
 import mujoco as mj
-import random
-import math
 import xml.etree.ElementTree as ET
-import os
-from stable_baselines3 import PPO
-from mujoco.glfw import glfw
 import functools
 import json
 from scipy.spatial.transform import Rotation 
 from mujoco_parent import MuJoCoParent
-import time
 from ray.rllib.env import MultiAgentEnv
+import copy
+from helper import updateDeep
+import time
 
 class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
 
@@ -124,18 +115,28 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
             truncations (dict): a dictionary of booleans indicating whether each agent is truncated
             infos (dict): a dictionary of dictionaries containing additional information for each agent
         """
+        start_time = time.time()
         mujocoActions = {key:action[key][self.actionRouting["physical"][0]:self.actionRouting["physical"][1]] for key in action.keys()}
         self.applyAction(mujocoActions)
         observations = {agent:self.getSensorData(agent) for agent in self.agents}
         rewards = {agent:0 for agent in self.agents}
 
-        for dynamic in self.environmentDynamics:
+        dataStoreCopies = [copy.deepcopy(self.dataStore) for _ in range(len(self.environmentDynamics))]
+        originalDataStore = copy.deepcopy(self.dataStore)
+
+        for i, dynamic in enumerate(self.environmentDynamics):
+            self.dataStore = dataStoreCopies[i]
             for agent in self.agents:
                 dynamicIndizes = self.actionRouting["dynamic"][dynamic.__class__.__name__]
                 dynamicActions = action[agent][dynamicIndizes[0]:dynamicIndizes[1]]
                 reward, obs = dynamic.dynamic(agent, dynamicActions)
                 observations[agent] = np.concatenate((observations[agent], obs))
                 rewards[agent] += reward
+
+        
+        self.dataStore = originalDataStore
+        for data in dataStoreCopies:
+            self.dataStore = updateDeep(self.dataStore, data)
 
         for reward in self.rewardFunctions:
             rewards = {agent:rewards[agent] + reward(self, agent) for agent in self.agents}
@@ -154,6 +155,7 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
         self.timestep += 1
         if self.timestep % 20 == 0:
             print(self.timestep / self.maxSteps)
+        print("FPS: ", 1.0 / (time.time() - start_time))
         return observations, rewards, terminations, truncations, infos
 
     def reset(self, *, seed=None, options=None):

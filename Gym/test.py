@@ -83,23 +83,28 @@ def done_function(mujoco_gym, agent):
     else:
         return False
     
+
+
+    
 class Language():
 
     def __init__(self, mujoco_gym):
         self.mujoco_gym = mujoco_gym
         self.observation_space = {"low":[0], "high":[3]}
         self.action_space = {"low":[0], "high":[3]}
-        self.words = {0:"Word 1", 1:"Word 2", 2:"Word 3"}
+        self.dataStore = {}
+        # Word mapping
+        # self.words = {0:"Word 1", 1:"Word 2", 2:"Word 3", 3:"Word 4", 4:"Word 5"}
 
     def dynamic(self, agent, actions):
 
         # At timestep 0, the utterance field has to be initialized
         if "utterance" not in self.mujoco_gym.dataStore[agent].keys():
-            self.mujoco_gym.dataStore[agent]["utterance"] = None
+            self.mujoco_gym.dataStore[agent]["utterance"] = 0
 
         # Extract the utterance from the agents action
         utterance = int(actions[0])
-        print(agent + " said: " + self.words[utterance])
+        # print(agent + " said: " + str(utterance))
 
         # Store the utterance in the dataStore for the environment
         self.mujoco_gym.dataStore[agent]["utterance"] = utterance
@@ -111,6 +116,9 @@ class Language():
             return 0, np.array([utteranceOtherAgent])
         else:
             return 0, np.array([0])
+        
+
+
         
 def test():
     configDict = {"xmlPath":"/Users/cowolff/Documents/GitHub/s.mujoco_environment/Environments/multi_agent/MultiEnvs.xml", "rewardFunctions":[reward_function], "doneFunctions":[done_function], "environmentDynamics":[Pick_Up_Dynamic], "agentCameras":False, "freeJoint":True, "agents":["agent3_torso", "agent2_torso", "agent1_torso"], "infoJson":"/Users/cowolff/Documents/GitHub/s.mujoco_environment/Environments/multi_agent/info_example.json", "renderMode":False}
