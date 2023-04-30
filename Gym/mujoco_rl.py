@@ -28,6 +28,7 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
         self.agentCameras = configDict.get("agentCameras", False)
 
         self.timestep = 0
+        self.start_time = time.time()
 
         self.actionRouting = {"physical":[],"dynamic":{}}
 
@@ -115,7 +116,6 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
             truncations (dict): a dictionary of booleans indicating whether each agent is truncated
             infos (dict): a dictionary of dictionaries containing additional information for each agent
         """
-        start_time = time.time()
         mujocoActions = {key:action[key][self.actionRouting["physical"][0]:self.actionRouting["physical"][1]] for key in action.keys()}
         self.applyAction(mujocoActions)
         observations = {agent:self.getSensorData(agent) for agent in self.agents}
@@ -153,9 +153,8 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
 
         infos = {agent:{} for agent in self.agents}
         self.timestep += 1
-        if self.timestep % 20 == 0:
+        if self.timestep % 50 == 0:
             print(self.timestep / self.maxSteps)
-        print("FPS: ", 1.0 / (time.time() - start_time))
         return observations, rewards, terminations, truncations, infos
 
     def reset(self, *, seed=None, options=None):
@@ -168,6 +167,8 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
             infos (dict): a dictionary of dictionaries containing additional information for each agent
         """
         observations = {agent:self.getSensorData(agent) for agent in self.agents}
+        print("Timesteps per second:", self.timestep / (time.time() - self.start_time))
+        self.start_time = time.time()
 
         for dynamic in self.environmentDynamics:
             for agent in self.agents:

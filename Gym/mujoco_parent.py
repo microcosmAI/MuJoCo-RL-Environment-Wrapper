@@ -216,16 +216,6 @@ class MuJoCoParent():
         sensorData = [self.data.sensordata[i] for i in self.agentsObservationIndex[agent]]
         return sensorData
 
-    def getCameraData(self, agent) -> np.array:
-        """
-        Returns the camera data of a specific agent.
-        arguments:
-            agent (str): The name of the agent.
-        returns:
-            np.array: The camera data of the agent.
-        """
-        pass
-
     def getData(self, name) -> dict:
         """
         Returns the data of a specific object/geom.
@@ -273,7 +263,7 @@ class MuJoCoParent():
                 except:
                     object = self.data.geom(object).xpos
             return object
-
+        
         object_1 = __name_to_coordinates(object_1) 
         object_2 = __name_to_coordinates(object_2)
 
