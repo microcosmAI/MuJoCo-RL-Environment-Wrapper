@@ -2,7 +2,7 @@
     "info": "This is a test",
     "objects":[
         {
-            "name": "target",
+            "name": "target_1",
             "tags":["target", "cube"],
             "description": "This is a cube"
         },
