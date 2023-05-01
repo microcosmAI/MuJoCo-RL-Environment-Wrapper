@@ -1,8 +1,5 @@
 <a name="readme-top"></a>
 
-
-
-<!-- PROJECT LOGO -->
 <br />
 <div align="center">
   <h2 align="center">MuJoCo environment</h2>
