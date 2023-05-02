@@ -38,7 +38,8 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
         MultiAgentEnv.__init__(self)
 
         self.__checkDynamics(self.environmentDynamics)
-        self.__checkDoneFunkcions(self.doneFunctions)
+
+        self.__checkDoneFunctions(self.doneFunctions)
         self.__checkRewardFunctions(self.rewardFunctions)
 
         self.environmentDynamics = [dynamic(self) for dynamic in self.environmentDynamics]
@@ -56,15 +57,61 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
             self.infoJson = None
             self.infoNameList = []
 
-    # TO-DO Lisa: Implement those functions
     def __checkDynamics(self, environmentDynamics):
-        pass
+        '''
+        Check the output of the dynamic function in every Dynamic Class. 
+        I.e. whether the observation has the shape of and suits the domain of the observation space and whether the reward is a float. 
 
-    def __checkDoneFunkcions(self, doneFunctions):
-        pass
+        Parameter:
+            environmentDynamics (list): list of all environment dynamic classes
+        '''
+        for environmentDynamic in environmentDynamics:
+            environmentDynamicInstance = environmentDynamic(self)
+            reward, observations = environmentDynamicInstance.dynamic()
+            # check observations
+            if not len(environmentDynamicInstance.observation_space["low"]) == len(observations):
+                raise Exception(f"Observation, the second return variable of dynamic function, must match length of lower bound of observation space of {environmentDynamicInstance}")
+            if not np.all(environmentDynamicInstance.observation_space["low"] <= observations):
+                raise Exception(f"Observation, the second return variable of dynamic function, exceeds the lower bound on at least one axis of the observation space of {environmentDynamicInstance}")
+            if not len(environmentDynamicInstance.observation_space["high"]) == len(observations):
+                raise Exception(f"Observation, the second return variable of dynamic function, must match length of upper bound of observation space of {environmentDynamicInstance} must at least be three dimensional")
+            if not np.all(environmentDynamicInstance.observation_space["high"] >= observations):
+                raise Exception(f"Observation, the second return variable of dynamic function, exceeds the upper bound on at least one axis of the observation space of observation space of {environmentDynamicInstance}")
+            # check reward
+            if not isinstance(reward, float):
+                raise Exception(f"Reward, the first return variable of dynamic function of {environmentDynamicInstance}, must be a float")
+
+    def __checkDoneFunctions(self, doneFunctions):
+        '''
+        Check the output of every done function.
+        I.e. whether done is a boolean and whether reward is a float.
+
+        Parameter:
+            doneFunctions (list): list of all done functions
+        '''
+        for doneFunction in doneFunctions:
+            done, reward = doneFunction()
+            # check done
+            if not isinstance(done, int):
+                raise Exception(f"Done, the first return variable of {doneFunction}, must be a boolean")
+            # check reward
+            if not isinstance(reward, float):
+                raise Exception(f"Reward, the second return variable of {doneFunction}, must be a float")
     
     def __checkRewardFunctions(self, rewardFunctions):
-        pass
+        '''
+        Check the output of every reward function.
+        I.e. whether reward is a float.
+
+        Parameter:
+            rewardFunctions (list): list of all reward functions
+        '''
+        for rewardFunction in rewardFunctions:
+            reward = rewardFunction()
+            # check reward
+            if not isinstance(reward, float):
+                raise Exception(f"Reward, the second return variable of {rewardFunction}, must be a float")
+
 
     def __createActionSpace(self) -> dict:
         """
