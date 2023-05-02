@@ -61,18 +61,21 @@ class Pick_Up_Dynamic():
 
     
 def reward_function(mujoco_gym, agent):
-    distance = mujoco_gym.distance(agent, mujoco_gym.dataStore[agent]["current_target"])
-    if "distance" not in mujoco_gym.dataStore[agent].keys():
+    if "targets" not in mujoco_gym.dataStore[agent].keys():
+        mujoco_gym.dataStore["targets"] = mujoco_gym.filterByTag("target")
+        mujoco_gym.dataStore[agent]["current_target"] = mujoco_gym.dataStore["targets"][random.randint(0, len(self.mujoco_gym.dataStore["targets"]) - 1)]["name"]
+        distance = mujoco_gym.distance(agent, mujoco_gym.dataStore[agent]["current_target"])
         mujoco_gym.dataStore[agent]["distance"] = distance
         new_reward = 0
     else:
+        distance = mujoco_gym.distance(agent, mujoco_gym.dataStore[agent]["current_target"])
         new_reward = mujoco_gym.dataStore[agent]["distance"] - distance
         mujoco_gym.dataStore[agent]["distance"] = distance
     reward = new_reward * 10
     return reward
 
 def done_function(mujoco_gym, agent):
-    if mujoco_gym.dataStore[agent]["distance"] >= 20:
+    if mujoco_gym.dataStore[agent]["distance"] >= 1:
         return True
     else:
         return False

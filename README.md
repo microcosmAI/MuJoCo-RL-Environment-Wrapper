@@ -30,6 +30,7 @@
 - [Usage](#usage)
   - [Environment Setup](#environment-setup)
   - [Language channel](#language-channel)
+  - [Reward and loss function](#reward-and-loss-function)
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
@@ -130,6 +131,43 @@ class Language():
             return 0, np.array([utteranceOtherAgent])
         else:
             return 0, np.array([0])
+```
+The environment dynamic has to be added to the environment config.
+```python
+config_dict = {"xmlPath":environment_path, "infoJson":info_path, "agents":agents, "environmentDynamics":[Language]}
+environment = mujoco_rl(config_dict)
+```
+### Reward and loss function
+A reference implementation of a reward function that gives back a positive reward if the agent gets closer to a target object. All possible target objects are filtered by tags at the beginning. Those tags are set in the info json file, added at the beginning.
+```python
+def reward_function(mujoco_gym, agent):
+    # Creates all the necessary fields to store the needed data within the dataStore at timestep 0 
+    if "targets" not in mujoco_gym.dataStore[agent].keys():
+        mujoco_gym.dataStore["targets"] = mujoco_gym.filterByTag("target")
+        mujoco_gym.dataStore[agent]["current_target"] = mujoco_gym.dataStore["targets"][random.randint(0, len(self.mujoco_gym.dataStore["targets"]) - 1)]["name"]
+        distance = mujoco_gym.distance(agent, mujoco_gym.dataStore[agent]["current_target"])
+        mujoco_gym.dataStore[agent]["distance"] = distance
+        new_reward = 0
+    # Calculates the distance between the agent and the current target
+    else:
+        distance = mujoco_gym.distance(agent, mujoco_gym.dataStore[agent]["current_target"])
+        new_reward = mujoco_gym.dataStore[agent]["distance"] - distance
+        mujoco_gym.dataStore[agent]["distance"] = distance
+    reward = new_reward * 10
+    return reward
+```
+The done function end the current training run if the agent gets closer than 1 distance unit to the target.
+```python
+def done_function(mujoco_gym, agent):
+    if mujoco_gym.dataStore[agent]["distance"] <= 1:
+        return True
+    else:
+        return False
+```
+Both of them have to be included in the config dictionary.
+```python
+config_dict = {"xmlPath":environment_path, "infoJson":info_path, "agents":agents, "rewardFunctions":[reward_function], "doneFunctions":[done_function]}
+environment = mujoco_rl(config_dict)
 ```
 For more examples, please refer to the [Wiki](https://github.com/microcosmAI/s.mujoco_environment/wiki).
 
