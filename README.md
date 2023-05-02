@@ -19,6 +19,20 @@
   </a>
 </div>
 
+<br/>
+
+## Table of Contents
+- [Table of Contents](#table-of-contents)
+- [About The Project](#about-the-project)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+- [Usage](#usage)
+- [Contributing](#contributing)
+- [License](#license)
+- [Contact](#contact)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## About The Project
 
