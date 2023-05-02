@@ -15,7 +15,7 @@
     <a href="https://github.com/microcosmAI/s.mujoco_environment/issues">Request Feature</a>
   </p>
   <a href="https://github.com/othneildrew/Best-README-Template">
-    <img src="images/HedgehockOfMuJoCo.png" alt="Logo">
+    <img src="images/HedgehockOfMuJoCo.png" alt="Logo" width="80%">
   </a>
 </div>
 
@@ -28,6 +28,8 @@
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
 - [Usage](#usage)
+  - [Environment Setup](#environment-setup)
+  - [Language channel](#language-channel)
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
@@ -54,28 +56,82 @@ This is an example of how to list things you need to use the software and how to
 
 ### Installation
 
-_Below is an example of how you can instruct your audience on installing and setting up your app. This template doesn't rely on any external dependencies or services._
+To use the environment, you have to install this repository as a pip package. Alternativly you can open a branch of this repository and implement changes directly in this repo.
 
-1. Get a free API Key at [https://example.com](https://example.com)
-2. Clone the repo
+1. Navigate to the repository with your terminal.
+2. Install the repository as a pip package
    ```sh
-   git clone https://github.com/your_username_/Project-Name.git
+   pip install .
    ```
-3. Install NPM packages
+3. Check whether the installation was successful
    ```sh
-   npm install
+   python -c "import MuJoCo_Gym"
    ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-
-<!-- USAGE EXAMPLES -->
 ## Usage
+### Environment Setup
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+The basic multi agent environment can be imported and used like this:<br/><br/>
+First the path for the environment has to be set. Additionaly you need to provide a list of agent names within the environment. Those names correspond to the top level body of your agent within the xml file. The json file containing additional information is optional.
+```python
+from MuJoCo_Gym import mujoco_rl
 
-_For more examples, please refer to the [Documentation](https://example.com)_
+environment_path = "Examples/multi_agent/MultiEnvs.xml" # File containing the mujoco environment
+info_path = "Example/multi_agent/info_example.json"     # File containing addtional environment informations
+agents = ["agent1", "agent2"]                           # List of agents (body names) within the environment
+```
+These informations have to be stored in a dictionary. This is necessary to make the environment compatible with Ray.
+```python
+config_dict = {"xmlPath":environment_path, "infoJson":info_path, "agents":agents}
+environment = mujoco_rl(config_dict)
+```
+Reset the environment to start the simulation.
+```python
+observation, infos = environment.reset()
+```
+Store the action of each agent in a dictionary with the agent names as keys. The array has to match the shape of the action space and the single agents have to be part of the action range.
+```python
+actions = {"agent1":np.array([]), "agent2":np.array([])}
+observations, rewards, terminations, truncations, infos = environment.step(actions)
+```
+
+### Language channel
+To use a language channel, you have to implement it as a environment dynamic. Each environment dynamic has its own observation and action space, which will be forwarded to the agents. Note that at the moment each agent gets all environment dynamics and each dynamic is executed for each agent once during every timestep.<br/><br/>
+A basic implementation of a language channel in the environment. Note that every environment dynamic needs to implement a __init__(self, mujoco_gym) and a dynamic(self, agent, actions).
+```python
+class Language():
+
+    def __init__(self, mujoco_gym):
+        self.mujoco_gym = mujoco_gym
+        self.observation_space = {"low":[0], "high":[3]}
+        self.action_space = {"low":[0], "high":[3]}
+        # The datastore is used to store and preserve data over one or multiple timesteps
+        self.dataStore = {}
+
+    def dynamic(self, agent, actions):
+
+        # At timestep 0, the utterance field has to be initialized
+        if "utterance" not in self.mujoco_gym.dataStore[agent].keys():
+            self.mujoco_gym.dataStore[agent]["utterance"] = 0
+
+        # Extract the utterance from the agents action
+        utterance = int(actions[0])
+
+        # Store the utterance in the dataStore for the environment
+        self.mujoco_gym.dataStore[agent]["utterance"] = utterance
+        otherAgent = [other for other in self.mujoco_gym.agents if other!=agent][0]
+
+        # Check whether the other agent has "spoken" yet (not at timestep 0)
+        if "utterance" in self.mujoco_gym.dataStore[otherAgent]:
+            utteranceOtherAgent = self.mujoco_gym.dataStore[otherAgent]["utterance"]
+            return 0, np.array([utteranceOtherAgent])
+        else:
+            return 0, np.array([0])
+```
+For more examples, please refer to the [Wiki](https://github.com/microcosmAI/s.mujoco_environment/wiki).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -97,7 +153,6 @@ Don't forget to give the project a star! Thanks again!
 
 
 
-<!-- LICENSE -->
 ## License
 
 Distributed under the MIT License. See `LICENSE.txt` for more information.
@@ -105,12 +160,8 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-
-<!-- CONTACT -->
 ## Contact
 
-Your Name - [@your_twitter](https://twitter.com/your_username) - email@example.com
-
-Project Link: [https://github.com/your_username/repo_name](https://github.com/your_username/repo_name)
+Cornelius Wolff - cowolff@uos.de
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
