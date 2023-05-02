@@ -98,6 +98,7 @@ Store the action of each agent in a dictionary with the agent names as keys. The
 actions = {"agent1":np.array([]), "agent2":np.array([])}
 observations, rewards, terminations, truncations, infos = environment.step(actions)
 ```
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ### Language channel
 To use a language channel, you have to implement it as a environment dynamic. Each environment dynamic has its own observation and action space, which will be forwarded to the agents. Note that at the moment each agent gets all environment dynamics and each dynamic is executed for each agent once during every timestep.<br/><br/>
@@ -137,6 +138,8 @@ The environment dynamic has to be added to the environment config.
 config_dict = {"xmlPath":environment_path, "infoJson":info_path, "agents":agents, "environmentDynamics":[Language]}
 environment = mujoco_rl(config_dict)
 ```
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ### Reward and loss function
 A reference implementation of a reward function that gives back a positive reward if the agent gets closer to a target object. All possible target objects are filtered by tags at the beginning. Those tags are set in the info json file, added at the beginning.
 ```python
