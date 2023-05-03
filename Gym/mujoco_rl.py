@@ -37,8 +37,15 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
         MuJoCoParent.__init__(self, self.xmlPath, self.exportPath, render=self.renderMode, freeJoint=self.freeJoint, agentCameras=self.agentCameras, agents=self.agents, skipFrames=self.skipFrames)
         MultiAgentEnv.__init__(self)
 
-        self.__checkDynamics(self.environmentDynamics)
+        if self.infoJson != "":
+            jsonFile = open(self.infoJson)
+            self.infoJson = json.load(jsonFile)
+            self.infoNameList = [object["name"] for object in self.infoJson["objects"]]
+        else:
+            self.infoJson = None
+            self.infoNameList = []
 
+        self.__checkDynamics(self.environmentDynamics)
         self.__checkDoneFunctions(self.doneFunctions)
         self.__checkRewardFunctions(self.rewardFunctions)
 
@@ -48,14 +55,6 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
         self.observation_space = self._observation_space[list(self._observation_space.keys())[0]]
         self._action_space = self.__createActionSpace()
         self.action_space = self._action_space[list(self._action_space.keys())[0]]
-
-        if self.infoJson != "":
-            jsonFile = open(self.infoJson)
-            self.infoJson = json.load(jsonFile)
-            self.infoNameList = [object["name"] for object in self.infoJson["objects"]]
-        else:
-            self.infoJson = None
-            self.infoNameList = []
 
     def __checkDynamics(self, environmentDynamics):
         '''
@@ -67,7 +66,8 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
         '''
         for environmentDynamic in environmentDynamics:
             environmentDynamicInstance = environmentDynamic(self)
-            reward, observations = environmentDynamicInstance.dynamic()
+            actions = environmentDynamicInstance.action_space["low"]
+            reward, observations = environmentDynamicInstance.dynamic(self.agents[0], actions)
             # check observations
             if not len(environmentDynamicInstance.observation_space["low"]) == len(observations):
                 raise Exception(f"Observation, the second return variable of dynamic function, must match length of lower bound of observation space of {environmentDynamicInstance}")
@@ -78,7 +78,7 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
             if not np.all(environmentDynamicInstance.observation_space["high"] >= observations):
                 raise Exception(f"Observation, the second return variable of dynamic function, exceeds the upper bound on at least one axis of the observation space of observation space of {environmentDynamicInstance}")
             # check reward
-            if not isinstance(reward, float):
+            if not (isinstance(reward, float) or isinstance(reward, int)):
                 raise Exception(f"Reward, the first return variable of dynamic function of {environmentDynamicInstance}, must be a float")
 
     def __checkDoneFunctions(self, doneFunctions):
@@ -90,13 +90,10 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
             doneFunctions (list): list of all done functions
         '''
         for doneFunction in doneFunctions:
-            done, reward = doneFunction()
+            done = doneFunction(self, self.agents[0])
             # check done
             if not isinstance(done, int):
                 raise Exception(f"Done, the first return variable of {doneFunction}, must be a boolean")
-            # check reward
-            if not isinstance(reward, float):
-                raise Exception(f"Reward, the second return variable of {doneFunction}, must be a float")
     
     def __checkRewardFunctions(self, rewardFunctions):
         '''
@@ -107,9 +104,9 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
             rewardFunctions (list): list of all reward functions
         '''
         for rewardFunction in rewardFunctions:
-            reward = rewardFunction()
+            reward = rewardFunction(self, self.agents[0])
             # check reward
-            if not isinstance(reward, float):
+            if not (isinstance(reward, float) or isinstance(reward, int)):
                 raise Exception(f"Reward, the second return variable of {rewardFunction}, must be a float")
 
 
@@ -237,6 +234,7 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
             filtered (list): list of objects with the specified tag
         """
         filtered = []
+        print(self.infoJson)
         for object in self.infoJson["objects"]:
             if "tags" in object.keys():
                 if tag in object["tags"]:

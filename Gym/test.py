@@ -63,7 +63,7 @@ class Pick_Up_Dynamic():
 def reward_function(mujoco_gym, agent):
     if "targets" not in mujoco_gym.dataStore[agent].keys():
         mujoco_gym.dataStore["targets"] = mujoco_gym.filterByTag("target")
-        mujoco_gym.dataStore[agent]["current_target"] = mujoco_gym.dataStore["targets"][random.randint(0, len(self.mujoco_gym.dataStore["targets"]) - 1)]["name"]
+        mujoco_gym.dataStore[agent]["current_target"] = mujoco_gym.dataStore["targets"][random.randint(0, len(mujoco_gym.dataStore["targets"]) - 1)]["name"]
         distance = mujoco_gym.distance(agent, mujoco_gym.dataStore[agent]["current_target"])
         mujoco_gym.dataStore[agent]["distance"] = distance
         new_reward = 0
@@ -181,4 +181,4 @@ def fpsTest():
             break
 
 
-test()
+fpsTest()
