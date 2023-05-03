@@ -30,7 +30,7 @@
 - [Usage](#usage)
   - [Environment Setup](#environment-setup)
   - [Language channel](#language-channel)
-  - [Reward and loss function](#reward-and-loss-function)
+  - [Reward and Done function](#reward-and-done-function)
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
@@ -102,7 +102,7 @@ observations, rewards, terminations, truncations, infos = environment.step(actio
 
 ### Language channel
 To use a language channel, you have to implement it as a environment dynamic. Each environment dynamic has its own observation and action space, which will be forwarded to the agents. Note that at the moment each agent gets all environment dynamics and each dynamic is executed for each agent once during every timestep.<br/><br/>
-A basic implementation of a language channel in the environment. Note that every environment dynamic needs to implement a __init__(self, mujoco_gym) and a dynamic(self, agent, actions).
+A basic implementation of a language channel in the environment. Note that every environment dynamic needs to implement a init(self, mujoco_gym) and a dynamic(self, agent, actions).
 ```python
 class Language():
 
@@ -140,14 +140,14 @@ environment = mujoco_rl(config_dict)
 ```
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-### Reward and loss function
-A reference implementation of a reward function that gives back a positive reward if the agent gets closer to a target object. All possible target objects are filtered by tags at the beginning. Those tags are set in the info json file, added at the beginning.
+### Reward and Done function
+A reference implementation of a reward function that gives back a positive reward if the agent gets closer to a target object. All possible target objects are filtered by tags at the beginning. Those tags are set in the info json file, which is handed over in the config dict at the beginning.
 ```python
 def reward_function(mujoco_gym, agent):
     # Creates all the necessary fields to store the needed data within the dataStore at timestep 0 
     if "targets" not in mujoco_gym.dataStore[agent].keys():
         mujoco_gym.dataStore["targets"] = mujoco_gym.filterByTag("target")
-        mujoco_gym.dataStore[agent]["current_target"] = mujoco_gym.dataStore["targets"][random.randint(0, len(self.mujoco_gym.dataStore["targets"]) - 1)]["name"]
+        mujoco_gym.dataStore[agent]["current_target"] = mujoco_gym.dataStore["targets"][random.randint(0, len(mujoco_gym.dataStore["targets"]) - 1)]["name"]
         distance = mujoco_gym.distance(agent, mujoco_gym.dataStore[agent]["current_target"])
         mujoco_gym.dataStore[agent]["distance"] = distance
         new_reward = 0
