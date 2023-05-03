@@ -151,8 +151,7 @@ def reward_function(mujoco_gym, agent):
         distance = mujoco_gym.distance(agent, mujoco_gym.dataStore[agent]["current_target"])
         mujoco_gym.dataStore[agent]["distance"] = distance
         new_reward = 0
-    # Calculates the distance between the agent and the current target
-    else:
+    else: # Calculates the distance between the agent and the current target
         distance = mujoco_gym.distance(agent, mujoco_gym.dataStore[agent]["current_target"])
         new_reward = mujoco_gym.dataStore[agent]["distance"] - distance
         mujoco_gym.dataStore[agent]["distance"] = distance
