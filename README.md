@@ -80,8 +80,8 @@ First the path for the environment has to be set. Additionaly you need to provid
 ```python
 from MuJoCo_Gym.mujoco_rl import MuJoCo_RL
 
-environment_path = "Examples/multi_agent/MultiEnvs.xml" # File containing the mujoco environment
-info_path = "Example/multi_agent/info_example.json"     # File containing addtional environment informations
+environment_path = "Examples/Environment/MultiEnvs.xml" # File containing the mujoco environment
+info_path = "Examples/Environment/info_example.json"     # File containing addtional environment informations
 agents = ["agent1", "agent2"]                           # List of agents (body names) within the environment
 ```
 These informations have to be stored in a dictionary. This is necessary to make the environment compatible with Ray.
