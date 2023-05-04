@@ -78,7 +78,7 @@ To use the environment, you have to install this repository as a pip package. Al
 The basic multi agent environment can be imported and used like this:<br/><br/>
 First the path for the environment has to be set. Additionaly you need to provide a list of agent names within the environment. Those names correspond to the top level body of your agent within the xml file. The json file containing additional information is optional.
 ```python
-from MuJoCo_Gym import mujoco_rl
+from MuJoCo_Gym.mujoco_rl import MuJoCo_RL
 
 environment_path = "Examples/multi_agent/MultiEnvs.xml" # File containing the mujoco environment
 info_path = "Example/multi_agent/info_example.json"     # File containing addtional environment informations

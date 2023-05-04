@@ -5,10 +5,10 @@ import xml.etree.ElementTree as ET
 import functools
 import json
 from scipy.spatial.transform import Rotation 
-from mujoco_parent import MuJoCoParent
+from MuJoCo_Gym.mujoco_parent import MuJoCoParent
 from ray.rllib.env import MultiAgentEnv
 import copy
-from helper import updateDeep
+from MuJoCo_Gym.helper import updateDeep
 import time
 
 class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
@@ -46,8 +46,8 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
             self.infoNameList = []
 
         self.__checkDynamics(self.environmentDynamics)
-        self.__checkDoneFunctions(self.doneFunctions)
         self.__checkRewardFunctions(self.rewardFunctions)
+        self.__checkDoneFunctions(self.doneFunctions)
 
         self.environmentDynamics = [dynamic(self) for dynamic in self.environmentDynamics]
 
@@ -196,9 +196,6 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
         truncations["__all__"] = all(truncations.values())
 
         infos = {agent:{} for agent in self.agents}
-        self.timestep += 1
-        if self.timestep % 50 == 0:
-            print(self.timestep / self.maxSteps)
         return observations, rewards, terminations, truncations, infos
 
     def reset(self, *, seed=None, options=None):
@@ -211,8 +208,6 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
             infos (dict): a dictionary of dictionaries containing additional information for each agent
         """
         observations = {agent:self.getSensorData(agent) for agent in self.agents}
-        print("Timesteps per second:", self.timestep / (time.time() - self.start_time))
-        self.start_time = time.time()
 
         for dynamic in self.environmentDynamics:
             for agent in self.agents:
@@ -234,7 +229,6 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
             filtered (list): list of objects with the specified tag
         """
         filtered = []
-        print(self.infoJson)
         for object in self.infoJson["objects"]:
             if "tags" in object.keys():
                 if tag in object["tags"]:
