@@ -2,9 +2,12 @@ import numpy as np
 import mujoco as mj
 from mujoco.glfw import glfw
 import math
-from MuJoCo_Gym.helper import mat2eulerScipy
 import xmltodict
 import ctypes
+try:
+    from helper import mat2eulerScipy
+except:
+    from MuJoCo_Gym.helper import mat2eulerScipy
 
 class MuJoCoParent():
     def __init__(self, xmlPath, exportPath=None, render=False, freeJoint=False, agents=[], agentCameras=False, skipFrames=1):

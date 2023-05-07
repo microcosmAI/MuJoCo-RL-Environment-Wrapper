@@ -4,12 +4,16 @@ import mujoco as mj
 import xml.etree.ElementTree as ET
 import functools
 import json
-from scipy.spatial.transform import Rotation 
-from MuJoCo_Gym.mujoco_parent import MuJoCoParent
+from scipy.spatial.transform import Rotation
 from ray.rllib.env import MultiAgentEnv
 import copy
-from MuJoCo_Gym.helper import updateDeep
 import time
+try:
+    from mujoco_parent import MuJoCoParent
+    from helper import updateDeep
+except:
+    from MuJoCo_Gym.mujoco_parent import MuJoCoParent
+    from MuJoCo_Gym.helper import updateDeep
 
 class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
 
