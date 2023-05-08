@@ -199,6 +199,8 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
                 truncations = {agent:terminations[agent] or done(self, agent) for agent in self.agents}
         truncations["__all__"] = all(truncations.values())
 
+        self.timestep += 1
+
         infos = {agent:{} for agent in self.agents}
         return observations, rewards, terminations, truncations, infos
 
