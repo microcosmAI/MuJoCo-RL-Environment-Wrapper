@@ -276,8 +276,6 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
         else:
             terminations = {agent:False for agent in self.agents}
         terminations["__all__"] = all(terminations.values())
-        if terminations["__all__"]:
-            print("Episode done")
         return terminations
 
     def __trunkationsFunctions(self):
