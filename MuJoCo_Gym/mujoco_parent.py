@@ -178,6 +178,11 @@ class MuJoCoParent():
             self.previous_time = self.data.time
             self.__render()
 
+    def reset(self):
+        mj.mj_resetData(self.model, self.data)
+        mj.mj_forward(self.model, self.data)
+        return self.getSensorData()
+
     def mujocoStep(self):
         """
         Performs a mujoco step.

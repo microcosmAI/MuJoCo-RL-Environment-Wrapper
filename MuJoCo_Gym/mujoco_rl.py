@@ -213,6 +213,7 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
             observations (dict): a dictionary of observations for each agent
             infos (dict): a dictionary of dictionaries containing additional information for each agent
         """
+        MuJoCoParent.reset(self)
         observations = {agent:self.getSensorData(agent) for agent in self.agents}
 
         for dynamic in self.environmentDynamics:
