@@ -4,12 +4,16 @@ import mujoco as mj
 import xml.etree.ElementTree as ET
 import functools
 import json
-from scipy.spatial.transform import Rotation 
-from MuJoCo_Gym.mujoco_parent import MuJoCoParent
+from scipy.spatial.transform import Rotation
 from ray.rllib.env import MultiAgentEnv
 import copy
-from MuJoCo_Gym.helper import updateDeep
 import time
+try:
+    from mujoco_parent import MuJoCoParent
+    from helper import updateDeep
+except:
+    from MuJoCo_Gym.mujoco_parent import MuJoCoParent
+    from MuJoCo_Gym.helper import updateDeep
 
 class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
 
@@ -195,6 +199,8 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
                 truncations = {agent:terminations[agent] or done(self, agent) for agent in self.agents}
         truncations["__all__"] = all(truncations.values())
 
+        self.timestep += 1
+
         infos = {agent:{} for agent in self.agents}
         return observations, rewards, terminations, truncations, infos
 
@@ -207,6 +213,7 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
             observations (dict): a dictionary of observations for each agent
             infos (dict): a dictionary of dictionaries containing additional information for each agent
         """
+        MuJoCoParent.reset(self)
         observations = {agent:self.getSensorData(agent) for agent in self.agents}
 
         for dynamic in self.environmentDynamics:
@@ -269,8 +276,6 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
         else:
             terminations = {agent:False for agent in self.agents}
         terminations["__all__"] = all(terminations.values())
-        if terminations["__all__"]:
-            print("Episode done")
         return terminations
 
     def __trunkationsFunctions(self):

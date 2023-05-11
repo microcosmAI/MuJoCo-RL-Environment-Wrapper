@@ -2,9 +2,12 @@ import numpy as np
 import mujoco as mj
 from mujoco.glfw import glfw
 import math
-from MuJoCo_Gym.helper import mat2eulerScipy
 import xmltodict
 import ctypes
+try:
+    from helper import mat2eulerScipy
+except:
+    from MuJoCo_Gym.helper import mat2eulerScipy
 
 class MuJoCoParent():
     def __init__(self, xmlPath, exportPath=None, render=False, freeJoint=False, agents=[], agentCameras=False, skipFrames=1):
@@ -175,6 +178,12 @@ class MuJoCoParent():
             self.previous_time = self.data.time
             self.__render()
 
+    def reset(self):
+        mj.mj_resetData(self.model, self.data)
+        mj.mj_forward(self.model, self.data)
+        self.previous_time = self.data.time
+        return self.getSensorData()
+
     def mujocoStep(self):
         """
         Performs a mujoco step.
@@ -182,16 +191,8 @@ class MuJoCoParent():
         mj.mj_step(self.model, self.data)
         if self.render:
             self.__render()
-        
-    def getSensorData(self) -> np.array:
-        """
-        Returns the sensor data of the environment.
-        returns:
-            np.array: The sensor data of the environment.
-        """
-        return self.data.sensordata
     
-    def getSensorData(self, agent) -> np.array:
+    def getSensorData(self, agent=None) -> np.array:
         """
         Returns the sensor data of a specific agent.
         arguments:
@@ -199,8 +200,11 @@ class MuJoCoParent():
         returns:
             np.array: The sensor data of the agent.
         """
-        sensorData = [self.data.sensordata[i] for i in self.agentsObservationIndex[agent]]
-        return sensorData
+        if agent is not None:
+            sensorData = [self.data.sensordata[i] for i in self.agentsObservationIndex[agent]]
+            return sensorData
+        else:
+            return self.data.sensordata
 
     def getData(self, name) -> dict:
         """
