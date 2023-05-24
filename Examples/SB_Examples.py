@@ -46,7 +46,7 @@ class Coordinates():
 environment_path = "Examples/Environment/MultiEnvs.xml"
 info_path = "Examples/Environment/info_example.json"
 agents = ["agent1_torso"]
-config_dict = {"xmlPath":environment_path, "infoJson":info_path, "agents":agents, "rewardFunctions":[reward_function], "doneFunctions":[done_function], "environmentDynamics":[Coordinates], "renderMode":False, "maxSteps":8192}
+config_dict = {"xmlPath":environment_path, "infoJson":info_path, "agents":agents, "rewardFunctions":[reward_function], "doneFunctions":[done_function], "environmentDynamics":[Coordinates], "freeJoint":True, "renderMode":False, "maxSteps":8192}
 environment = MuJoCo_RL(config_dict)
 
 
