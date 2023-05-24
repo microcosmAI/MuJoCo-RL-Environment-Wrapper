@@ -243,7 +243,7 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
                     filtered.append(data)
         return filtered
 
-    def getData(self, name: str) -> np.array:
+    def getData(self, name: str):
         """
         Returns the data for an object/geom with the given name.
         arguments:

@@ -2,7 +2,6 @@ import random
 from MuJoCo_Gym.mujoco_rl import MuJoCo_RL
 from MuJoCo_Gym.single_agent_wrapper import Single_Agent_Wrapper
 import time
-from stable_baselines3 import PPO, SAC
 import copy
 import ray
 from ray.rllib.algorithms.ppo import PPOConfig
@@ -51,7 +50,7 @@ config_dict = {"xmlPath":environment_path, "infoJson":info_path, "agents":agents
 environment = MuJoCo_RL(config_dict)
 
 
-ray.init()
+ray.init(num_gpus=1)
 config = PPOConfig()
 
 # Update the config object.
@@ -61,7 +60,7 @@ config.training(lr=tune.grid_search([0.001, 0.0001]), clip_param=0.2)
 config = config.environment(env=MuJoCo_RL)
 config["env_config"] = config_dict
 config["model"]["fcnet_hiddens"] = [512,512]
-config["model"]["use_lstm"] = True
+config["model"]["use_lstm"] = False
 config["model"]["lstm_cell_size"] = 128
 
 print(config.to_dict())
@@ -73,8 +72,3 @@ tune.Tuner(
     run_config=air.RunConfig(stop={"episode_reward_mean": 200}),
     param_space=config.to_dict(),
 ).fit()
-# gymEnvironment = Single_Agent_Wrapper(environment, agents[0])
-
-# policy_kwargs = dict(net_arch=dict(pi=[1024, 1024, 1024], qf=[1024, 1024, 1024]))
-# model = SAC("MlpPolicy", gymEnvironment, verbose=1, train_freq=(1, "episode"), batch_size=256, learning_starts=10000, learning_rate=0.0001, buffer_size=1500000, policy_kwargs=policy_kwargs, device="mps")
-# model.learn(total_timesteps=5000000, progress_bar=True)
