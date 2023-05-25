@@ -85,30 +85,10 @@
     <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="agent1_ankle_2" gear="150"/>
     <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="agent1_hip_3" gear="150"/>
     <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="agent1_ankle_3" gear="150"/>
-    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="agent2_hip_4" gear="150"/>
-    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="agent2_ankle_4" gear="150"/>
-    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="agent2_hip_1" gear="150"/>
-    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="agent2_ankle_1" gear="150"/>
-    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="agent2_hip_2" gear="150"/>
-    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="agent2_ankle_2" gear="150"/>
-    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="agent2_hip_3" gear="150"/>
-    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="agent2_ankle_3" gear="150"/>
-    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="agent3_hip_4" gear="150"/>
-    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="agent3_ankle_4" gear="150"/>
-    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="agent3_hip_1" gear="150"/>
-    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="agent3_ankle_1" gear="150"/>
-    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="agent3_hip_2" gear="150"/>
-    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="agent3_ankle_2" gear="150"/>
-    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="agent3_hip_3" gear="150"/>
-    <motor ctrllimited="true" ctrlrange="-1.0 1.0" joint="agent3_ankle_3" gear="150"/>
   </actuator>
 
   <sensor>
     <rangefinder name="agent1_box1" site="agent1_box_range" cutoff="20"/>
     <frameyaxis name="agent1_yAxis" objtype="site" objname="agent1_box_range"/>
-    <rangefinder name="agent2_box1" site="agent2_box_range" cutoff="20"/>
-    <frameyaxis name="agent2_yAxis" objtype="site" objname="agent2_box_range"/>
-    <rangefinder name="agent3_box1" site="agent3_box_range" cutoff="20"/>
-    <frameyaxis name="agent3_yAxis" objtype="site" objname="agent3_box_range"/>
   </sensor>
 </mujoco>
