@@ -76,7 +76,19 @@ class MuJoCoParent():
         # Stores all the sensors and their indizes in the mujoco data object in a dictionary.
         for sensorType in sensorDict:
             for key in sensorType.keys():
-                for sensor in sensorType[key]:
+                if isinstance(sensorType[key], list):
+                    for sensor in sensorType[key]:
+                        current = self.data.sensor(sensor["@name"])
+                        indizes[current.id] = {"name":sensor["@name"], "data":current.data}
+                        if "@site" in sensor.keys():
+                            indizes[current.id]["site"] = sensor["@site"]
+                            indizes[current.id]["type"] = "rangefinder"
+                            indizes[current.id]["cutoff"] = sensor["@cutoff"]
+                        if "@objtype" in sensor.keys():
+                            indizes[current.id]["site"] = sensor["@objname"]
+                            indizes[current.id]["type"] = "frameyaxis"
+                elif isinstance(sensorType[key], dict):
+                    sensor = sensorType[key]
                     current = self.data.sensor(sensor["@name"])
                     indizes[current.id] = {"name":sensor["@name"], "data":current.data}
                     if "@site" in sensor.keys():
