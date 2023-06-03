@@ -31,12 +31,13 @@ class MuJoCoParent():
 
         self.freeJoint = freeJoint
         self.agentCameras = agentCameras
-        self.sensorResoultion = (64, 64)
+        self.sensorResoultion = (32, 32)
 
         self.rgbSensors = {}
 
         self.agentsActionIndex = {}
         self.agentsObservationIndex = {}
+        self.agentObservationsID = []
 
         if render or agentCameras:
             glfw.init()
@@ -48,6 +49,7 @@ class MuJoCoParent():
             self.context = mj.MjrContext(self.model, mj.mjtFontScale.mjFONTSCALE_150.value)
 
         if agentCameras:
+            print("Initializing cameras")
             self.__initRGBSensor()
 
         if render:
@@ -75,9 +77,21 @@ class MuJoCoParent():
 
         # Stores all the sensors and their indizes in the mujoco data object in a dictionary.
         for sensorType in sensorDict:
-            for key in sensorType.keys():
-                if isinstance(sensorType[key], list):
-                    for sensor in sensorType[key]:
+            if sensorType is not None:
+                for key in sensorType.keys():
+                    if isinstance(sensorType[key], list):
+                        for sensor in sensorType[key]:
+                            current = self.data.sensor(sensor["@name"])
+                            indizes[current.id] = {"name":sensor["@name"], "data":current.data}
+                            if "@site" in sensor.keys():
+                                indizes[current.id]["site"] = sensor["@site"]
+                                indizes[current.id]["type"] = "rangefinder"
+                                indizes[current.id]["cutoff"] = sensor["@cutoff"]
+                            if "@objtype" in sensor.keys():
+                                indizes[current.id]["site"] = sensor["@objname"]
+                                indizes[current.id]["type"] = "frameyaxis"
+                    elif isinstance(sensorType[key], dict):
+                        sensor = sensorType[key]
                         current = self.data.sensor(sensor["@name"])
                         indizes[current.id] = {"name":sensor["@name"], "data":current.data}
                         if "@site" in sensor.keys():
@@ -87,17 +101,6 @@ class MuJoCoParent():
                         if "@objtype" in sensor.keys():
                             indizes[current.id]["site"] = sensor["@objname"]
                             indizes[current.id]["type"] = "frameyaxis"
-                elif isinstance(sensorType[key], dict):
-                    sensor = sensorType[key]
-                    current = self.data.sensor(sensor["@name"])
-                    indizes[current.id] = {"name":sensor["@name"], "data":current.data}
-                    if "@site" in sensor.keys():
-                        indizes[current.id]["site"] = sensor["@site"]
-                        indizes[current.id]["type"] = "rangefinder"
-                        indizes[current.id]["cutoff"] = sensor["@cutoff"]
-                    if "@objtype" in sensor.keys():
-                        indizes[current.id]["site"] = sensor["@objname"]
-                        indizes[current.id]["type"] = "frameyaxis"
 
         # Filters for the sensors that are on the agent and sorts them by number.
         for item in sorted(indizes.items()):
@@ -123,6 +126,7 @@ class MuJoCoParent():
                 for _ in range(3):
                     observationSpace["low"].append(-360)
                     observationSpace["high"].append(360)
+
         
         return observationSpace
     
@@ -175,7 +179,7 @@ class MuJoCoParent():
         """
         for agent in actions.keys():
             if self.freeJoint:
-                self.data.qvel[self.agentsActionIndex[agent]] = actions[agent] * 0.5
+                self.data.qvel[self.agentsActionIndex[agent]] = actions[agent]
             else:
                 try:
                     actionIndexs = self.agentsActionIndex[agent]
@@ -183,6 +187,7 @@ class MuJoCoParent():
                     self.data.ctrl[actionIndexs] = mujoco_actions
                 except IndexError:
                     print("The number of actions for agent {} is not correct.".format(agent))
+
         for _ in range(skipFrames):
             mj.mj_step(self.model, self.data)
             self.frame += 1
@@ -340,11 +345,11 @@ class MuJoCoParent():
 
     def getCameraData(self, agent) -> np.array:
         """
-        Returns the camera data of a specific camera.
+        Returns the data of all cameras attached to an agent.
         arguments:
-            camera (str): The name of the camera.
+            agent (str): The name of the agent.
         returns:
-            np.array: The camera data of the camera.
+            np.array: The data from all cameras.
         """
         allCameraData = []
         for camera in self.rgbSensors[agent]:

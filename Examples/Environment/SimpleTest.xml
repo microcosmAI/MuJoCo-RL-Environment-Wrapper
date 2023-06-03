@@ -1,0 +1,32 @@
+<mujoco>
+  <worldbody>
+    <light diffuse=".5 .5 .5" pos="0 0 3" dir="0 0 -1" />
+    <body pos="0 0 0" name="">
+      <geom type="plane" size="5 5 1.110223E-16" euler="0 0 0" rgba="200 200 200 1" name="" />
+    </body>
+    <body pos="-0.09832478 -1.214811 0.510036" name="agent">
+      <joint type="free" name="agent_freeJoint" />
+      <camera name="agent_1_camera" pos="1 0 0" euler="90 0 0"/>
+      <geom type="box" size="0.5 0.5 0.5" euler="0 0 0" rgba="255 255 0 1" name="agent_geom0" />
+    </body>
+    <body pos="0.06210995 4.539877 0.9658446" name="">
+      <geom type="box" size="5 0.25 1" euler="0 0 0" rgba="0 .9 0 1" name="border1" />
+    </body>
+    <body pos="-0.009183407 -4.742987 0.9291329" name="">
+      <geom type="box" size="5 0.25 1" euler="0 0 0" rgba="0 .9 0 1" name="border2" />
+    </body>
+    <body pos="4.788641 -0.1293259 0.9513283" name="">
+      <geom type="box" size="0.25 5 1" euler="0 0 0" rgba="0 .9 0 1" name="border3" />
+    </body>
+    <body pos="-5.05311 -0.06087518 0.9600735" name="">
+      <geom type="box" size="0.25 5 1" euler="0 0 0" rgba="0 .9 0 1" name="border4" />
+    </body>
+    <body pos="2.546444 2.421941 0.3997998" name="target_1">
+      <geom type="box" size="0.5 0.5 0.5" euler="0 0 0" rgba="0 0 255 1" name="target_1_geom0" />
+    </body>
+    <body pos="-2.440188 1.738849 0.9417777" name="target_2">
+      <geom type="box" size="0.5 0.5 0.5" euler="0 0 0" rgba="255 0 0 1" name="target_2_geom0" />
+    </body>
+  </worldbody>
+  <sensor />
+</mujoco>

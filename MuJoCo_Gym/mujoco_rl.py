@@ -49,14 +49,13 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
             self.infoJson = None
             self.infoNameList = []
 
+        self.environmentDynamics = [dynamic(self) for dynamic in self.environmentDynamics]
+        self._observation_space = self.__createObservationSpace()
+        self.observation_space = self._observation_space[list(self._observation_space.keys())[0]]
         self.__checkDynamics(self.environmentDynamics)
         self.__checkRewardFunctions(self.rewardFunctions)
         self.__checkDoneFunctions(self.doneFunctions)
 
-        self.environmentDynamics = [dynamic(self) for dynamic in self.environmentDynamics]
-
-        self._observation_space = self.__createObservationSpace()
-        self.observation_space = self._observation_space[list(self._observation_space.keys())[0]]
         self._action_space = self.__createActionSpace()
         self.action_space = self._action_space[list(self._action_space.keys())[0]]
 
@@ -68,8 +67,7 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
         Parameter:
             environmentDynamics (list): list of all environment dynamic classes
         '''
-        for environmentDynamic in environmentDynamics:
-            environmentDynamicInstance = environmentDynamic(self)
+        for environmentDynamicInstance in environmentDynamics:
             actions = environmentDynamicInstance.action_space["low"]
             reward, observations = environmentDynamicInstance.dynamic(self.agents[0], actions)
             # check observations
@@ -165,7 +163,7 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
             infos (dict): a dictionary of dictionaries containing additional information for each agent
         """
         mujocoActions = {key:action[key][self.actionRouting["physical"][0]:self.actionRouting["physical"][1]] for key in action.keys()}
-        self.applyAction(mujocoActions)
+        self.applyAction(mujocoActions, skipFrames=self.skipFrames)
         observations = {agent:self.getSensorData(agent) for agent in self.agents}
         rewards = {agent:0 for agent in self.agents}
 
@@ -197,7 +195,7 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
         else:
             for done in self.doneFunctions:
                 truncations = {agent:terminations[agent] or done(self, agent) for agent in self.agents}
-        truncations["__all__"] = all(truncations.values())
+        truncations["__all__"] = any(truncations.values())
 
         self.timestep += 1
 
