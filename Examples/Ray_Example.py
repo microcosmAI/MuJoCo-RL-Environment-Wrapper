@@ -56,6 +56,14 @@ def reward(mujoco_gym, agent):
                         reward = -1
     return reward
 
+def collision_reward(mujoco_gym, agent):
+    borders = ["border1", "border2", "border3", "border4"]
+    reward = 0
+    for border in borders:
+        if(mujoco_gym.collision("agent_geom0", border)):
+            reward = -1
+    return reward
+
 def done(mujoco_gym, agent):
     borders = ["border1", "border2", "border3", "border4"]
     for border in borders:
@@ -68,7 +76,7 @@ environment_path = "Examples/Environment/SimpleTest.xml"
 # info_path = "Environment/info_example.json"
 agents = ["agent"]
 # config_dict = {"xmlPath":environment_path, "infoJson":info_path, "agents":agents, "rewardFunctions":[reward_function], "doneFunctions":[done_function], "environmentDynamics":[Language], "freeJoint":True, "renderMode":True, "maxSteps":4096}
-config_dict = {"xmlPath":environment_path, "agents":agents, "rewardFunctions":[reward], "doneFunctions":[done], "skipFrames":30, "environmentDynamics":[Image], "freeJoint":True, "renderMode":False, "maxSteps":4096, "agentCameras":True}
+config_dict = {"xmlPath":environment_path, "agents":agents, "rewardFunctions":[reward, collision_reward], "doneFunctions":[done], "skipFrames":30, "environmentDynamics":[Image], "freeJoint":True, "renderMode":False, "maxSteps":4096, "agentCameras":True}
 
 environment = MuJoCo_RL(config_dict, )
 environment = Single_Agent_Wrapper(environment, "agent")
