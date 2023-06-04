@@ -4,14 +4,21 @@ from mujoco.glfw import glfw
 import math
 import xmltodict
 import ctypes
+import random
 try:
     from helper import mat2eulerScipy
 except:
     from MuJoCo_Gym.helper import mat2eulerScipy
 
 class MuJoCoParent():
-    def __init__(self, xmlPath, exportPath=None, render=False, freeJoint=False, agents=[], agentCameras=False, skipFrames=1):
-        self.xmlPath = xmlPath
+    def __init__(self, xmlPaths, exportPath=None, render=False, freeJoint=False, agents=[], agentCameras=False, skipFrames=1):
+        if isinstance(xmlPaths, str):
+            xmlPath = xmlPaths
+            self.xmlPaths = xmlPaths
+        elif isinstance(xmlPaths, list):
+            xmlPath = random.choice(xmlPaths)
+            self.xmlPaths = xmlPaths
+
         self.exportPath = exportPath
 
         #open text file in read mode
@@ -21,23 +28,13 @@ class MuJoCoParent():
         data = textFile.read()
         self.xmlDict = xmltodict.parse(data)
 
-        # Load and create the MuJoCo Model and Data
-        self.model = mj.MjModel.from_xml_path(xmlPath)   # MuJoCo model
-        self.data = mj.MjData(self.model)                # MuJoCo data
-        self.__cam = mj.MjvCamera()                      # Abstract camera
-        self.__opt = mj.MjvOption()                      # visualization options
-        self.frame = 0                                   # frame counter
         self.render = render                             # whether to render the environment
 
         self.freeJoint = freeJoint
         self.agentCameras = agentCameras
-        self.sensorResoultion = (32, 32)
+        self.sensorResoultion = (64, 64)
 
         self.rgbSensors = {}
-
-        self.agentsActionIndex = {}
-        self.agentsObservationIndex = {}
-        self.agentObservationsID = []
 
         if render or agentCameras:
             glfw.init()
@@ -45,17 +42,31 @@ class MuJoCoParent():
             self.window = glfw.create_window(1200, 900, "Demo", None, None)
             glfw.make_context_current(self.window)
             glfw.swap_interval(1)
-            self.scene = mj.MjvScene(self.model, maxgeom=10000)
-            self.context = mj.MjrContext(self.model, mj.mjtFontScale.mjFONTSCALE_150.value)
 
-        if agentCameras:
-            print("Initializing cameras")
-            self.__initRGBSensor()
+        self.__initEnvironment(xmlPath)
+        self.frame = 0                                   # frame counter
+
+        self.agentsActionIndex = {}
+        self.agentsObservationIndex = {}
+        self.agentObservationsID = []
 
         if render:
             self.previous_time = self.data.time
             self.cam = mj.MjvCamera()                    # Abstract camera
             self.__initRender()
+
+    def __initEnvironment(self, xmlPath):
+        self.model = mj.MjModel.from_xml_path(xmlPath)   # MuJoCo model
+        self.data = mj.MjData(self.model)                # MuJoCo data
+        self.__cam = mj.MjvCamera()                      # Abstract camera
+        self.__opt = mj.MjvOption()                      # visualization options
+
+        if self.render or self.agentCameras:
+            self.scene = mj.MjvScene(self.model, maxgeom=10000)
+            self.context = mj.MjrContext(self.model, mj.mjtFontScale.mjFONTSCALE_150.value)
+
+        if self.agentCameras:
+            self.__initRGBSensor()
 
     def getObservationSpaceMuJoCo(self, agent):
         """
@@ -196,8 +207,15 @@ class MuJoCoParent():
             self.__render()
 
     def reset(self):
-        mj.mj_resetData(self.model, self.data)
-        mj.mj_forward(self.model, self.data)
+        if isinstance(self.xmlPaths, str):
+            mj.mj_resetData(self.model, self.data)
+            mj.mj_forward(self.model, self.data)
+        elif isinstance(self.xmlPaths, list):
+            xml_path = random.choice(self.xmlPaths)
+            self.__initEnvironment(xml_path)
+            mj.mj_resetData(self.model, self.data)
+            mj.mj_forward(self.model, self.data)
+            self.cam = mj.MjvCamera()  
         self.previous_time = self.data.time
         return self.getSensorData()
 
@@ -243,13 +261,15 @@ class MuJoCoParent():
                 "type": "body",
             }
         except Exception as e:
-            dataBody = self.data.geom(name)
+            dataGeom = self.data.geom(name)
+            modelGeom = self.model.geom(name)
             infos = {
-                "position": dataBody.xpos,
-                "orientation": mat2eulerScipy(dataBody.xmat),
-                "id": dataBody.id,
-                "name": dataBody.name,
-                "type": "geom"
+                "position": dataGeom.xpos,
+                "orientation": mat2eulerScipy(dataGeom.xmat),
+                "id": dataGeom.id,
+                "name": dataGeom.name,
+                "type": "geom",
+                "color": modelGeom.rgba
             }
         return infos
 

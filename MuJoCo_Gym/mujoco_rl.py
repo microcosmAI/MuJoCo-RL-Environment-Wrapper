@@ -223,7 +223,6 @@ class MuJoCo_RL(MultiAgentEnv, MuJoCoParent):
         self.timestep = 0
         infos = {agent:{} for agent in self.agents}
         return observations, infos
-        # return observations
     
     def filterByTag(self, tag) -> list:
         """
