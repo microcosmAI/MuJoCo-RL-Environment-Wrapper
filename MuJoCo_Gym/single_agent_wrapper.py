@@ -2,10 +2,11 @@ try:
     from mujoco_rl import MuJoCo_RL # Used during development
 except:
     from MuJoCo_Gym.mujoco_rl import MuJoCo_RL # Used as a pip package
-import gym
-from gym.spaces.box import Box
 
-class Single_Agent_Wrapper(gym.Env):
+from gymnasium.spaces.box import Box
+import gymnasium
+
+class Single_Agent_Wrapper(gymnasium.Env):
 
     metadata = {"render_modes": ["human", "none"], "render_fps": 4}
 
@@ -24,12 +25,14 @@ class Single_Agent_Wrapper(gym.Env):
     def step(self, action):
         action = {self.agent: action}
         observations, rewards, terminations, truncations, infos = self.environment.step(action)
-        if terminations["__all__"] or truncations["__all__"]:
-            done = True
-        else:
-            done = False
-        return observations[self.agent], rewards[self.agent], done, infos[self.agent]
+        termination = terminations["__all__"]
+        truncation = truncations["__all__"]
+        
+        return observations[self.agent], rewards[self.agent], termination, truncation, infos[self.agent]
 
-    def reset(self):
+    def reset(self, *, seed=1, options={}):
         observations, infos = self.environment.reset()
         return observations[self.agent]
+    
+    def render():
+        pass
