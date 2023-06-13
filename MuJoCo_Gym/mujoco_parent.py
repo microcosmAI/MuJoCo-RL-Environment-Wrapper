@@ -4,14 +4,21 @@ from mujoco.glfw import glfw
 import math
 import xmltodict
 import ctypes
+import random
 try:
     from helper import mat2eulerScipy
 except:
     from MuJoCo_Gym.helper import mat2eulerScipy
 
 class MuJoCoParent():
-    def __init__(self, xmlPath, exportPath=None, render=False, freeJoint=False, agents=[], agentCameras=False, skipFrames=1):
-        self.xmlPath = xmlPath
+    def __init__(self, xmlPaths, exportPath=None, render=False, freeJoint=False, agents=[], agentCameras=False, skipFrames=1):
+        if isinstance(xmlPaths, str):
+            xmlPath = xmlPaths
+            self.xmlPaths = xmlPaths
+        elif isinstance(xmlPaths, list):
+            xmlPath = random.choice(xmlPaths)
+            self.xmlPaths = xmlPaths
+
         self.exportPath = exportPath
 
         #open text file in read mode
@@ -21,12 +28,6 @@ class MuJoCoParent():
         data = textFile.read()
         self.xmlDict = xmltodict.parse(data)
 
-        # Load and create the MuJoCo Model and Data
-        self.model = mj.MjModel.from_xml_path(xmlPath)   # MuJoCo model
-        self.data = mj.MjData(self.model)                # MuJoCo data
-        self.__cam = mj.MjvCamera()                      # Abstract camera
-        self.__opt = mj.MjvOption()                      # visualization options
-        self.frame = 0                                   # frame counter
         self.render = render                             # whether to render the environment
 
         self.freeJoint = freeJoint
@@ -35,25 +36,37 @@ class MuJoCoParent():
 
         self.rgbSensors = {}
 
-        self.agentsActionIndex = {}
-        self.agentsObservationIndex = {}
-
         if render or agentCameras:
             glfw.init()
             self.opt = mj.MjvOption()
             self.window = glfw.create_window(1200, 900, "Demo", None, None)
             glfw.make_context_current(self.window)
             glfw.swap_interval(1)
-            self.scene = mj.MjvScene(self.model, maxgeom=10000)
-            self.context = mj.MjrContext(self.model, mj.mjtFontScale.mjFONTSCALE_150.value)
 
-        if agentCameras:
-            self.__initRGBSensor()
+        self.__initEnvironment(xmlPath)
+        self.frame = 0                                   # frame counter
+
+        self.agentsActionIndex = {}
+        self.agentsObservationIndex = {}
+        self.agentObservationsID = []
 
         if render:
             self.previous_time = self.data.time
             self.cam = mj.MjvCamera()                    # Abstract camera
             self.__initRender()
+
+    def __initEnvironment(self, xmlPath):
+        self.model = mj.MjModel.from_xml_path(xmlPath)   # MuJoCo model
+        self.data = mj.MjData(self.model)                # MuJoCo data
+        self.__cam = mj.MjvCamera()                      # Abstract camera
+        self.__opt = mj.MjvOption()                      # visualization options
+
+        if self.render or self.agentCameras:
+            self.scene = mj.MjvScene(self.model, maxgeom=10000)
+            self.context = mj.MjrContext(self.model, mj.mjtFontScale.mjFONTSCALE_150.value)
+
+        if self.agentCameras:
+            self.__initRGBSensor()
 
     def getObservationSpaceMuJoCo(self, agent):
         """
@@ -75,17 +88,30 @@ class MuJoCoParent():
 
         # Stores all the sensors and their indizes in the mujoco data object in a dictionary.
         for sensorType in sensorDict:
-            for key in sensorType.keys():
-                for sensor in sensorType[key]:
-                    current = self.data.sensor(sensor["@name"])
-                    indizes[current.id] = {"name":sensor["@name"], "data":current.data}
-                    if "@site" in sensor.keys():
-                        indizes[current.id]["site"] = sensor["@site"]
-                        indizes[current.id]["type"] = "rangefinder"
-                        indizes[current.id]["cutoff"] = sensor["@cutoff"]
-                    if "@objtype" in sensor.keys():
-                        indizes[current.id]["site"] = sensor["@objname"]
-                        indizes[current.id]["type"] = "frameyaxis"
+            if sensorType is not None:
+                for key in sensorType.keys():
+                    if isinstance(sensorType[key], list):
+                        for sensor in sensorType[key]:
+                            current = self.data.sensor(sensor["@name"])
+                            indizes[current.id] = {"name":sensor["@name"], "data":current.data}
+                            if "@site" in sensor.keys():
+                                indizes[current.id]["site"] = sensor["@site"]
+                                indizes[current.id]["type"] = "rangefinder"
+                                indizes[current.id]["cutoff"] = sensor["@cutoff"]
+                            if "@objtype" in sensor.keys():
+                                indizes[current.id]["site"] = sensor["@objname"]
+                                indizes[current.id]["type"] = "frameyaxis"
+                    elif isinstance(sensorType[key], dict):
+                        sensor = sensorType[key]
+                        current = self.data.sensor(sensor["@name"])
+                        indizes[current.id] = {"name":sensor["@name"], "data":current.data}
+                        if "@site" in sensor.keys():
+                            indizes[current.id]["site"] = sensor["@site"]
+                            indizes[current.id]["type"] = "rangefinder"
+                            indizes[current.id]["cutoff"] = sensor["@cutoff"]
+                        if "@objtype" in sensor.keys():
+                            indizes[current.id]["site"] = sensor["@objname"]
+                            indizes[current.id]["type"] = "frameyaxis"
 
         # Filters for the sensors that are on the agent and sorts them by number.
         for item in sorted(indizes.items()):
@@ -111,6 +137,7 @@ class MuJoCoParent():
                 for _ in range(3):
                     observationSpace["low"].append(-360)
                     observationSpace["high"].append(360)
+
         
         return observationSpace
     
@@ -163,7 +190,7 @@ class MuJoCoParent():
         """
         for agent in actions.keys():
             if self.freeJoint:
-                self.data.qvel[self.agentsActionIndex[agent]] = actions[agent] * 0.5
+                self.data.qvel[self.agentsActionIndex[agent]] = actions[agent]
             else:
                 try:
                     actionIndexs = self.agentsActionIndex[agent]
@@ -171,6 +198,7 @@ class MuJoCoParent():
                     self.data.ctrl[actionIndexs] = mujoco_actions
                 except IndexError:
                     print("The number of actions for agent {} is not correct.".format(agent))
+
         for _ in range(skipFrames):
             mj.mj_step(self.model, self.data)
             self.frame += 1
@@ -179,8 +207,15 @@ class MuJoCoParent():
             self.__render()
 
     def reset(self):
-        mj.mj_resetData(self.model, self.data)
-        mj.mj_forward(self.model, self.data)
+        if isinstance(self.xmlPaths, str):
+            mj.mj_resetData(self.model, self.data)
+            mj.mj_forward(self.model, self.data)
+        elif isinstance(self.xmlPaths, list):
+            xml_path = random.choice(self.xmlPaths)
+            self.__initEnvironment(xml_path)
+            mj.mj_resetData(self.model, self.data)
+            mj.mj_forward(self.model, self.data)
+            self.cam = mj.MjvCamera()  
         self.previous_time = self.data.time
         return self.getSensorData()
 
@@ -226,13 +261,15 @@ class MuJoCoParent():
                 "type": "body",
             }
         except Exception as e:
-            dataBody = self.data.geom(name)
+            dataGeom = self.data.geom(name)
+            modelGeom = self.model.geom(name)
             infos = {
-                "position": dataBody.xpos,
-                "orientation": mat2eulerScipy(dataBody.xmat),
-                "id": dataBody.id,
-                "name": dataBody.name,
-                "type": "geom"
+                "position": dataGeom.xpos,
+                "orientation": mat2eulerScipy(dataGeom.xmat),
+                "id": dataGeom.id,
+                "name": dataGeom.name,
+                "type": "geom",
+                "color": modelGeom.rgba
             }
         return infos
 
@@ -328,11 +365,11 @@ class MuJoCoParent():
 
     def getCameraData(self, agent) -> np.array:
         """
-        Returns the camera data of a specific camera.
+        Returns the data of all cameras attached to an agent.
         arguments:
-            camera (str): The name of the camera.
+            agent (str): The name of the agent.
         returns:
-            np.array: The camera data of the camera.
+            np.array: The data from all cameras.
         """
         allCameraData = []
         for camera in self.rgbSensors[agent]:
