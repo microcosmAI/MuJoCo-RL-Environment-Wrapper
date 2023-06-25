@@ -1,26 +1,28 @@
 import random
+import numpy as np
 
-class Environment_Dynamic():
+
+class EnvironmentDynamic:
+    """ ToDo: desctiption """
+
     def __init__(self, mujoco_gym):
-        """
-        Initializes Environment dynamic and defines observation space.
+        """Initializes Environment dynamic and defines observation space
 
         Parameters:
-            mujoco_gym (SingleAgent): instance of single agent environment
+            mujoco_gym (SingleAgent): Instance of single agent environment
         """
         self.mujoco_gym = mujoco_gym
-        self.observation_space = {"low" : [-70, -70, -70], "high" : [70, 70, 70]}
+        self.observation_space = {"low": [-70, -70, -70], "high": [70, 70, 70]}
     
-    def dynamic(self):
-        """
-        Update target if the agent is close enough. 
+    def dynamic(self) -> [int, np.array]:
+        """Update target if the agent is close enough
 
         Returns: 
-            reward (int): reward for the agent, always 0 for environment_dynamics
-            target_coordinates (ndarray): coordinates of the target
+            reward (int): Reward for the agent, always 0 for environment_dynamics
+            target_coordinates (np.array): Coordinates of the target
         """
         if "targets" not in self.mujoco_gym.data_store.keys():
-            self.mujoco_gym.data_store["targets"] = self.mujoco_gym.filterByTag("target")
+            self.mujoco_gym.data_store["targets"] = self.mujoco_gym.filter_by_tag("target")
             self.mujoco_gym.data_store["current_target"] = self.mujoco_gym.data_store["targets"][random.randint(0, len(self.mujoco_gym.data_store["targets"]) - 1)]["name"]
         distance = self.mujoco_gym.calculate_distance("torso", self.mujoco_gym.data_store["current_target"])
         if distance < 1:
