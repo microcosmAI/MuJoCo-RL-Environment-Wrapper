@@ -1,7 +1,7 @@
 try:
     from mujoco_rl import MuJoCoRL  # Used during development
 except:
-    from MuJoCo_Gym.mujoco_rl import MuJoCoRL  # Used as a pip package
+    from MuJoCo_Gym.mujoco_rl import MuJoCoRL # Used as a pip package
 
 import gym
 import gym.spaces.box as gymBox
@@ -65,3 +65,7 @@ class GymWrapper(gym.Env):
             done = False
         
         return observations[self.agent], rewards[self.agent], done, infos[self.agent]
+    
+    def reset(self):
+        observations, infos = self.environment.reset()
+        return observations[self.agent]
