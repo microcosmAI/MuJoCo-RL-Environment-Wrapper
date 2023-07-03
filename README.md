@@ -77,12 +77,13 @@ To use the environment, you have to install this repository as a pip package. Al
 
 The basic multi agent environment can be imported and used like this:<br/><br/>
 First the path for the environment has to be set. Additionaly you need to provide a list of agent names within the environment. Those names correspond to the top level body of your agent within the xml file. The json file containing additional information is optional.
-```python
-from MuJoCo_Gym.mujoco_rl import MuJoCo_RL
 
-environment_path = "Examples/Environment/MultiEnvs.xml" # File containing the mujoco environment
-info_path = "Examples/Environment/info_example.json"     # File containing addtional environment informations
-agents = ["agent1", "agent2"]                           # List of agents (body names) within the environment
+```python
+from MuJoCo_Gym.mujoco_rl import MuJoCoRL
+
+environment_path = "Examples/Environment/MultiEnvs.xml"  # File containing the mujoco environment
+info_path = "Examples/Environment/info_example.json"  # File containing addtional environment informations
+agents = ["agent1", "agent2"]  # List of agents (body names) within the environment
 ```
 These informations have to be stored in a dictionary. This is necessary to make the environment compatible with Ray.
 ```python
@@ -103,32 +104,33 @@ observations, rewards, terminations, truncations, infos = environment.step(actio
 ### Language channel
 To use a language channel, you have to implement it as a environment dynamic. Each environment dynamic has its own observation and action space, which will be forwarded to the agents. Note that at the moment each agent gets all environment dynamics and each dynamic is executed for each agent once during every timestep.<br/><br/>
 A basic implementation of a language channel in the environment. Note that every environment dynamic needs to implement a init(self, mujoco_gym) and a dynamic(self, agent, actions).
+
 ```python
 class Language():
 
     def __init__(self, mujoco_gym):
         self.mujoco_gym = mujoco_gym
-        self.observation_space = {"low":[0], "high":[3]}
-        self.action_space = {"low":[0], "high":[3]}
+        self.observation_space = {"low": [0], "high": [3]}
+        self.action_space = {"low": [0], "high": [3]}
         # The datastore is used to store and preserve data over one or multiple timesteps
         self.dataStore = {}
 
     def dynamic(self, agent, actions):
 
         # At timestep 0, the utterance field has to be initialized
-        if "utterance" not in self.mujoco_gym.dataStore[agent].keys():
-            self.mujoco_gym.dataStore[agent]["utterance"] = 0
+        if "utterance" not in self.mujoco_gym.data_store[agent].keys():
+            self.mujoco_gym.data_store[agent]["utterance"] = 0
 
         # Extract the utterance from the agents action
         utterance = int(actions[0])
 
         # Store the utterance in the dataStore for the environment
-        self.mujoco_gym.dataStore[agent]["utterance"] = utterance
-        otherAgent = [other for other in self.mujoco_gym.agents if other!=agent][0]
+        self.mujoco_gym.data_store[agent]["utterance"] = utterance
+        otherAgent = [other for other in self.mujoco_gym.agents if other != agent][0]
 
         # Check whether the other agent has "spoken" yet (not at timestep 0)
-        if "utterance" in self.mujoco_gym.dataStore[otherAgent]:
-            utteranceOtherAgent = self.mujoco_gym.dataStore[otherAgent]["utterance"]
+        if "utterance" in self.mujoco_gym.data_store[otherAgent]:
+            utteranceOtherAgent = self.mujoco_gym.data_store[otherAgent]["utterance"]
             return 0, np.array([utteranceOtherAgent])
         else:
             return 0, np.array([0])
@@ -142,26 +144,29 @@ environment = mujoco_rl(config_dict)
 
 ### Reward and Done function
 A reference implementation of a reward function that gives back a positive reward if the agent gets closer to a target object. All possible target objects are filtered by tags at the beginning. Those tags are set in the info json file, which is handed over in the config dict at the beginning.
+
 ```python
 def reward_function(mujoco_gym, agent):
     # Creates all the necessary fields to store the needed data within the dataStore at timestep 0 
-    if "targets" not in mujoco_gym.dataStore[agent].keys():
-        mujoco_gym.dataStore["targets"] = mujoco_gym.filterByTag("target")
-        mujoco_gym.dataStore[agent]["current_target"] = mujoco_gym.dataStore["targets"][random.randint(0, len(mujoco_gym.dataStore["targets"]) - 1)]["name"]
-        distance = mujoco_gym.distance(agent, mujoco_gym.dataStore[agent]["current_target"])
-        mujoco_gym.dataStore[agent]["distance"] = distance
+    if "targets" not in mujoco_gym.data_store[agent].keys():
+        mujoco_gym.data_store["targets"] = mujoco_gym.filter_by_tag("target")
+        mujoco_gym.data_store[agent]["current_target"] =
+        mujoco_gym.data_store["targets"][random.randint(0, len(mujoco_gym.data_store["targets"]) - 1)]["name"]
+        distance = mujoco_gym.distance(agent, mujoco_gym.data_store[agent]["current_target"])
+        mujoco_gym.data_store[agent]["distance"] = distance
         new_reward = 0
-    else: # Calculates the distance between the agent and the current target
-        distance = mujoco_gym.distance(agent, mujoco_gym.dataStore[agent]["current_target"])
-        new_reward = mujoco_gym.dataStore[agent]["distance"] - distance
-        mujoco_gym.dataStore[agent]["distance"] = distance
+    else:  # Calculates the distance between the agent and the current target
+        distance = mujoco_gym.distance(agent, mujoco_gym.data_store[agent]["current_target"])
+        new_reward = mujoco_gym.data_store[agent]["distance"] - distance
+        mujoco_gym.data_store[agent]["distance"] = distance
     reward = new_reward * 10
     return reward
 ```
 The done function end the current training run if the agent gets closer than 1 distance unit to the target.
+
 ```python
 def done_function(mujoco_gym, agent):
-    if mujoco_gym.dataStore[agent]["distance"] <= 1:
+    if mujoco_gym.data_store[agent]["distance"] <= 1:
         return True
     else:
         return False
