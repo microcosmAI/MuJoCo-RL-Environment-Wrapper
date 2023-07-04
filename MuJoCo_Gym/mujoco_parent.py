@@ -32,6 +32,7 @@ class MuJoCoParent:
         self.render = render
         self.free_joint = free_joint
         self.agent_cameras = agent_cameras
+        self.sensorWindow = None
 
         # Assigns "xml_path" var; depends on user input if single or multiple xml-files are given.
         # If multiple ones exist, a random xml-file is picked, read and parsed to a string.
@@ -366,11 +367,12 @@ class MuJoCoParent:
 
     def __init_rgb_sensor(self):
         """Initializes the rgb sensor """
-        glfw.window_hint(glfw.RESIZABLE, glfw.FALSE)
-        glfw.window_hint(glfw.VISIBLE, glfw.FALSE)
-        self.sensorWindow = glfw.create_window(self.sensor_resolution[0],
-                                               self.sensor_resolution[1],
-                                               "RGB Sensor", None, None)
+        if self.sensorWindow == None:
+            glfw.window_hint(glfw.RESIZABLE, glfw.FALSE)
+            glfw.window_hint(glfw.VISIBLE, glfw.FALSE)
+            self.sensorWindow = glfw.create_window(self.sensor_resolution[0],
+                                                self.sensor_resolution[1],
+                                                "RGB Sensor", None, None)
 
     def __find_agent_camera(self, agent_dict: dict, agent: str):
         """Finds the camera of a specific agent
