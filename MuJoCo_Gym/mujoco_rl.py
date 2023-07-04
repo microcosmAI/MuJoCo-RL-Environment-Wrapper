@@ -4,6 +4,7 @@ import time
 import numpy as np
 from gymnasium.spaces import Box
 from ray.rllib.env import MultiAgentEnv
+import os
 
 try:
     from mujoco_parent import MuJoCoParent
@@ -21,8 +22,8 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
     """
     def __init__(self, config_dict: dict):
         self.agents = config_dict.get("agents", [])
-        self.xml_path = config_dict.get("xmlPath")
-        self.info_json = config_dict.get("infoJson", "")
+        self.xml_paths = config_dict.get("xmlPath")
+        self.info_jsons = config_dict.get("infoJson", None)
         self.render_mode = config_dict.get("renderMode", False)
         self.export_path = config_dict.get("exportPath")
         self.free_joint = config_dict.get("freeJoint", False)
@@ -40,14 +41,23 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
 
         self.data_store = {agent: {} for agent in self.agents}
 
-        MuJoCoParent.__init__(self, xml_paths=self.xml_path, export_path=self.export_path, render=self.render_mode, #ToDo: why is this None?
+        MuJoCoParent.__init__(self, xml_paths=self.xml_paths, export_path=self.export_path, render=self.render_mode, #ToDo: why is this None?
                               free_joint=self.free_joint, agent_cameras=self.agent_cameras)
         MultiAgentEnv.__init__(self)
 
-        if self.info_json != "":
-            json_file = open(self.info_json)
+        if isinstance(self.info_jsons, list):
+            if len(self.info_jsons) != len(self.xml_paths):
+                raise Exception("Length mismatch between info_json list and xml_paths list")
+            head, tail = os.path.split(self.xml_path)
+            json_file = tail.split(".")[0] + ".json"
+            json_file = [current for current in self.info_jsons if json_file in current][0]
+            json_file = open(json_file)
             self.info_json = json.load(json_file)
-            self.info_name_list = [object["name"] for object in self.info_json["objects"]] #ToDo: is this not a df? looks like a list or sth
+            self.info_name_list = [key for key in self.info_json["environment"]["objects"].keys()]
+        elif isinstance(self.info_jsons, str):
+            json_file = open(self.info_jsons)
+            self.info_json = json.load(json_file)
+            self.info_name_list = [key for key in self.info_json["environment"]["objects"].keys()] #ToDo: is this not a df? looks like a list or sth
         else:
             self.info_json = None
             self.info_name_list = []
@@ -227,6 +237,15 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
             infos (dict): A dictionary of dictionaries containing additional information for each agent
         """
         MuJoCoParent.reset(self)
+
+        if isinstance(self.info_jsons, list):
+            head, tail = os.path.split(self.xml_path)
+            json_file = tail.split(".")[0] + ".json"
+            json_file = [current for current in self.info_jsons if json_file in current][0]
+            json_file = open(json_file)
+            self.info_json = json.load(json_file)
+            self.info_name_list = [key for key in self.info_json["environment"]["objects"].keys()]
+
         observations = {agent: self.get_sensor_data(agent) for agent in self.agents}
 
         for dynamic in self.environment_dynamics:
@@ -249,7 +268,7 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
             filtered (list): List of objects with the specified tag
         """
         filtered = []
-        for object in self.info_json["objects"]:
+        for object in self.info_json["environment"]["objects"]:
             if "tags" in object.keys():
                 if tag in object["tags"]:
                     data = self.get_data(object["name"])

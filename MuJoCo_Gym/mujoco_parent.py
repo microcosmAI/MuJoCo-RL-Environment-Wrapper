@@ -36,12 +36,12 @@ class MuJoCoParent:
 
         # Assigns "xml_path" var; depends on user input if single or multiple xml-files are given.
         # If multiple ones exist, a random xml-file is picked, read and parsed to a string.
-        xml_path = None
+        self.xml_path = None
         if isinstance(xml_paths, str):
-            xml_path = xml_paths
+            self.xml_path = xml_paths
         elif isinstance(xml_paths, list):
-            xml_path = random.choice(xml_paths)
-        text_file = open(xml_path, "r")
+            self.xml_path = random.choice(xml_paths)
+        text_file = open(self.xml_path, "r")
         data = text_file.read()
         self.xml_dict = xmltodict.parse(data)
 
@@ -55,7 +55,7 @@ class MuJoCoParent:
             glfw.make_context_current(self.window)
             glfw.swap_interval(1)
 
-        self.__init_environment(xml_path)
+        self.__init_environment(self.xml_path)
         self.frame = 0                                   # Frame counter
 
         self.agents_action_index = {}
@@ -238,8 +238,8 @@ class MuJoCoParent:
             mj.mj_resetData(self.model, self.data)
             mj.mj_forward(self.model, self.data)
         elif isinstance(self.xml_paths, list):
-            xml_path = random.choice(self.xml_paths)
-            self.__init_environment(xml_path)
+            self.xml_path = random.choice(self.xml_paths)
+            self.__init_environment(self.xml_path)
             mj.mj_resetData(self.model, self.data)
             mj.mj_forward(self.model, self.data)
             self.cam = mj.MjvCamera()  
