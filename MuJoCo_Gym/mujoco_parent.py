@@ -385,29 +385,43 @@ class MuJoCoParent:
         for camera in cameras:
             self.rgb_sensors[agent].append(camera["@name"])
 
-    def get_camera_data(self, agent: str) -> np.array:
+    def __get_specific_camera(self, camera: str):
+        """ Returns the image data for a specific camera
+        
+        Parameters:
+            camera (str): The name of the camera
+        Returns:
+            np.array: The data from the camera
+        """
+        sensor = mj.MjvCamera()
+        sensor.type = 2
+        sensor.fixedcamid = self.model.camera(camera).id
+        viewport_width, viewport_height = glfw.get_framebuffer_size(self.sensorWindow)
+        viewport = mj.MjrRect(0, 0, viewport_width, viewport_height)
+
+        # Update scene and render
+        mj.mjv_updateScene(self.model, self.data, self.opt, None, sensor,
+                        mj.mjtCatBit.mjCAT_ALL.value, self.scene)
+        mj.mjr_render(viewport, self.scene, self.context)
+        data = np.array(self.__get_rgbd_buffer(viewport, self.context))
+        return data.reshape((viewport_width, viewport_height, 3))
+
+    def get_camera_data(self, cam_object: str) -> np.array:
         """Returns the data of all cameras attached to an agent
 
         Parameters:
-            agent (str): The name of the agent.
+            cam_object (str): The name of the agent or the camera.
         Returns:
             np.array: The data from all cameras.
         """
-        all_camera_data = []
-        for camera in self.rgb_sensors[agent]:
-            sensor = mj.MjvCamera()
-            sensor.type = 2
-            sensor.fixedcamid = self.model.camera(camera).id
-            viewport_width, viewport_height = glfw.get_framebuffer_size(self.sensorWindow)
-            viewport = mj.MjrRect(0, 0, viewport_width, viewport_height)
-
-            # Update scene and render
-            mj.mjv_updateScene(self.model, self.data, self.opt, None, sensor,
-                               mj.mjtCatBit.mjCAT_ALL.value, self.scene)
-            mj.mjr_render(viewport, self.scene, self.context)
-            data = np.array(self.__get_rgbd_buffer(viewport, self.context))
-            all_camera_data.append(data.reshape((viewport_width, viewport_height, 3)))
-        return np.array(all_camera_data)
+        if cam_object in self.rgb_sensors.keys():
+            all_camera_data = []
+            for camera in self.rgb_sensors[cam_object]:
+                data = self.__get_specific_camera(camera)
+                all_camera_data.append(data)
+            return np.array(all_camera_data)
+        else:
+            return self.__get_specific_camera(cam_object)
 
     @staticmethod
     def __get_rgbd_buffer(viewport, context):
