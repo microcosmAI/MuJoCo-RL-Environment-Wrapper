@@ -45,6 +45,22 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
                               free_joint=self.free_joint, agent_cameras=self.agent_cameras)
         MultiAgentEnv.__init__(self)
 
+        self.__instantiateJson()
+
+        self.environment_dynamics = [dynamic(self) for dynamic in self.environment_dynamics]
+        self._observation_space = self.__create_observation_space()
+        self.observation_space = self._observation_space[list(self._observation_space.keys())[0]]
+        self.__check_dynamics(self.environment_dynamics)
+        self.__check_reward_functions(self.reward_functions)
+        self.__check_done_functions(self.done_functions)
+
+        self._action_space = self.__create_action_space()
+        self.action_space = self._action_space[list(self._action_space.keys())[0]]
+
+
+    def __instantiateJson(self):
+        """If a json file or a list of json files is provided, it is loaded into the environment in this function.
+        """
         if isinstance(self.info_jsons, list):
             if len(self.info_jsons) != len(self.xml_paths):
                 raise Exception("Length mismatch between info_json list and xml_paths list")
@@ -61,16 +77,7 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         else:
             self.info_json = None
             self.info_name_list = []
-
-        self.environment_dynamics = [dynamic(self) for dynamic in self.environment_dynamics]
-        self._observation_space = self.__create_observation_space()
-        self.observation_space = self._observation_space[list(self._observation_space.keys())[0]]
-        self.__check_dynamics(self.environment_dynamics)
-        self.__check_reward_functions(self.reward_functions)
-        self.__check_done_functions(self.done_functions)
-
-        self._action_space = self.__create_action_space()
-        self.action_space = self._action_space[list(self._action_space.keys())[0]]
+        
 
     def __check_dynamics(self, environment_dynamics: list):
         """Check the output of the dynamic function in every Dynamic Class.
