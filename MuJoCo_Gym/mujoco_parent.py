@@ -55,7 +55,7 @@ class MuJoCoParent:
             glfw.make_context_current(self.window)
             glfw.swap_interval(1)
 
-        self.__init_environment(self.xml_path)
+        self.__init_environment()
         self.frame = 0                                   # Frame counter
 
         self.agents_action_index = {}
@@ -67,13 +67,10 @@ class MuJoCoParent:
             self.cam = mj.MjvCamera()                    # Abstract camera
             self.__init_render()
 
-    def __init_environment(self, xml_path: str):
+    def __init_environment(self):
         """Initializes environment
-
-        Parameters:
-            xml_path (str): Path to xml-file containing finished world environment
         """
-        self.model = mj.MjModel.from_xml_path(xml_path)  # MuJoCo model
+        self.model = mj.MjModel.from_xml_path(self.xml_path)  # MuJoCo model
         self.data = mj.MjData(self.model)                # MuJoCo data
         self.__cam = mj.MjvCamera()                      # Abstract camera
         self.__opt = mj.MjvOption()                      # visualization options
@@ -239,7 +236,7 @@ class MuJoCoParent:
             mj.mj_forward(self.model, self.data)
         elif isinstance(self.xml_paths, list):
             self.xml_path = random.choice(self.xml_paths)
-            self.__init_environment(self.xml_path)
+            self.__init_environment()
             mj.mj_resetData(self.model, self.data)
             mj.mj_forward(self.model, self.data)
             self.cam = mj.MjvCamera()  
