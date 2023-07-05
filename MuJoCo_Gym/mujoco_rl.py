@@ -276,10 +276,11 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         """
         filtered = []
         for object in self.info_json["environment"]["objects"]:
-            if "tags" in object.keys():
-                if tag in object["tags"]:
-                    data = self.get_data(object["name"])
-                    filtered.append(data)
+            if "tags" in self.info_json["environment"]["objects"][object].keys():
+                if self.info_json["environment"]["objects"][object]["tags"] != None:
+                    if tag in self.info_json["environment"]["objects"][object]["tags"]:
+                        data = self.get_data(object)
+                        filtered.append(data)
         return filtered
 
     def get_data(self, name: str) -> np.array:
@@ -293,9 +294,10 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         """
         data = MuJoCoParent.get_data(self, name)
         if name in self.info_name_list:
-            index = self.info_name_list.index(name)
-            for key in self.info_json["objects"][index].keys():
-                data[key] = self.info_json["objects"][index][key]
+            # index = self.info_name_list.index(name)
+            for key in self.info_json["environment"]["objects"][name].keys():
+                if key not in ["position", "orientation", "mass"]:
+                    data[key] = self.info_json["environment"]["objects"][name][key]
         return data
 
     def __get_observations(self) -> dict:
