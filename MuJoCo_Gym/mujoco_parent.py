@@ -32,15 +32,16 @@ class MuJoCoParent:
         self.render = render
         self.free_joint = free_joint
         self.agent_cameras = agent_cameras
+        self.sensorWindow = None
 
         # Assigns "xml_path" var; depends on user input if single or multiple xml-files are given.
         # If multiple ones exist, a random xml-file is picked, read and parsed to a string.
-        xml_path = None
+        self.xml_path = None
         if isinstance(xml_paths, str):
-            xml_path = xml_paths
+            self.xml_path = xml_paths
         elif isinstance(xml_paths, list):
-            xml_path = random.choice(xml_paths)
-        text_file = open(xml_path, "r")
+            self.xml_path = random.choice(xml_paths)
+        text_file = open(self.xml_path, "r")
         data = text_file.read()
         self.xml_dict = xmltodict.parse(data)
 
@@ -54,7 +55,7 @@ class MuJoCoParent:
             glfw.make_context_current(self.window)
             glfw.swap_interval(1)
 
-        self.__init_environment(xml_path)
+        self.__init_environment()
         self.frame = 0                                   # Frame counter
 
         self.agents_action_index = {}
@@ -66,13 +67,10 @@ class MuJoCoParent:
             self.cam = mj.MjvCamera()                    # Abstract camera
             self.__init_render()
 
-    def __init_environment(self, xml_path: str):
+    def __init_environment(self):
         """Initializes environment
-
-        Parameters:
-            xml_path (str): Path to xml-file containing finished world environment
         """
-        self.model = mj.MjModel.from_xml_path(xml_path)  # MuJoCo model
+        self.model = mj.MjModel.from_xml_path(self.xml_path)  # MuJoCo model
         self.data = mj.MjData(self.model)                # MuJoCo data
         self.__cam = mj.MjvCamera()                      # Abstract camera
         self.__opt = mj.MjvOption()                      # visualization options
@@ -237,8 +235,8 @@ class MuJoCoParent:
             mj.mj_resetData(self.model, self.data)
             mj.mj_forward(self.model, self.data)
         elif isinstance(self.xml_paths, list):
-            xml_path = random.choice(self.xml_paths)
-            self.__init_environment(xml_path)
+            self.xml_path = random.choice(self.xml_paths)
+            self.__init_environment()
             mj.mj_resetData(self.model, self.data)
             mj.mj_forward(self.model, self.data)
             self.cam = mj.MjvCamera()  
@@ -366,11 +364,12 @@ class MuJoCoParent:
 
     def __init_rgb_sensor(self):
         """Initializes the rgb sensor """
-        glfw.window_hint(glfw.RESIZABLE, glfw.FALSE)
-        glfw.window_hint(glfw.VISIBLE, glfw.FALSE)
-        self.sensorWindow = glfw.create_window(self.sensor_resolution[0],
-                                               self.sensor_resolution[1],
-                                               "RGB Sensor", None, None)
+        if self.sensorWindow == None:
+            glfw.window_hint(glfw.RESIZABLE, glfw.FALSE)
+            glfw.window_hint(glfw.VISIBLE, glfw.FALSE)
+            self.sensorWindow = glfw.create_window(self.sensor_resolution[0],
+                                                self.sensor_resolution[1],
+                                                "RGB Sensor", None, None)
 
     def __find_agent_camera(self, agent_dict: dict, agent: str):
         """Finds the camera of a specific agent
