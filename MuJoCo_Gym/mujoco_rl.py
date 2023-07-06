@@ -21,7 +21,6 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         config_dict (dict): Config dictionary containing user settings
     """
     def __init__(self, config_dict: dict):
-        self.agents = config_dict.get("agents", [])
         self.xml_paths = config_dict.get("xmlPath")
         self.info_jsons = config_dict.get("infoJson", None)
         self.render_mode = config_dict.get("renderMode", False)
@@ -39,13 +38,15 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
 
         self.action_routing = {"physical": [], "dynamic": {}}
 
-        self.data_store = {agent: {} for agent in self.agents}
-
         MuJoCoParent.__init__(self, xml_paths=self.xml_paths, export_path=self.export_path, render=self.render_mode, #ToDo: why is this None?
                               free_joint=self.free_joint, agent_cameras=self.agent_cameras)
         MultiAgentEnv.__init__(self)
 
         self.__instantiateJson()
+
+        self.agents = [agent["name"] for agent in self.filter_by_tag("Agent")]
+
+        self.data_store = {agent: {} for agent in self.agents}
 
         self.environment_dynamics = [dynamic(self) for dynamic in self.environment_dynamics]
         self._observation_space = self.__create_observation_space()

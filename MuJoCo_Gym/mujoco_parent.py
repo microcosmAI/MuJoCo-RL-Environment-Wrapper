@@ -169,7 +169,8 @@ class MuJoCoParent:
         """
         action_space = {"low": [], "high": []}
         action_indexs = []      # ToDo: is the "s" a mistake?
-        agent_dict = self.__find_in_nested_dict(self.xml_dict, name=agent, filter_key="@name")
+        agent_upper_body = agent.split("/")[0] + "/"
+        agent_dict = self.__find_in_nested_dict(self.xml_dict, name=agent_upper_body, filter_key="@name")
         agent_joints = self.__find_in_nested_dict(agent_dict, parent="joint")
         if self.free_joint:
             try:

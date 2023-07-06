@@ -13,10 +13,10 @@ class GymnasiumWrapper(gymnasium.Env):
     """ ToDo: description """
     metadata = {"render_modes": ["human", "none"], "render_fps": 4}
 
-    def __init__(self, environment: MuJoCoRL, agent: str, render_mode="none") -> None:
+    def __init__(self, environment: MuJoCoRL, render_mode="none") -> None:
         super().__init__()
         self.environment = environment
-        self.agent = agent
+        self.agent = self.environment.filter_by_tag("Agent")[0]["name"]
         self.render_mode = render_mode
 
         if len(self.environment.agents) > 1:
@@ -44,10 +44,10 @@ class GymWrapper(gym.Env):
     """ ToDo: description """
     metadata = {"render_modes": ["human", "none"], "render_fps": 4}
 
-    def __init__(self, environment: MuJoCoRL, agent: str, render_mode="none") -> None:
+    def __init__(self, environment: MuJoCoRL, render_mode="none") -> None:
         super().__init__()
         self.environment = environment
-        self.agent = agent
+        self.agent = self.environment.filter_by_tag("Agent")[0]["name"]
         self.render_mode = render_mode
 
         if len(self.environment.agents) > 1:
