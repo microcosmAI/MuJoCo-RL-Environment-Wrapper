@@ -33,6 +33,7 @@ class MuJoCoParent:
         self.free_joint = free_joint
         self.agent_cameras = agent_cameras
         self.sensorWindow = None
+        self.scene = None
 
         # Assigns "xml_path" var; depends on user input if single or multiple xml-files are given.
         # If multiple ones exist, a random xml-file is picked, read and parsed to a string.
@@ -75,9 +76,10 @@ class MuJoCoParent:
         self.__cam = mj.MjvCamera()                      # Abstract camera
         self.__opt = mj.MjvOption()                      # visualization options
 
-        if self.render or self.agent_cameras:
-            self.scene = mj.MjvScene(self.model, maxgeom=10000)
-            self.context = mj.MjrContext(self.model, mj.mjtFontScale.mjFONTSCALE_150.value)
+        if self.scene == None:
+            if self.render or self.agent_cameras:
+                self.scene = mj.MjvScene(self.model, maxgeom=10000)
+                self.context = mj.MjrContext(self.model, mj.mjtFontScale.mjFONTSCALE_150.value)
 
         if self.agent_cameras:
             self.__init_rgb_sensor()
@@ -342,9 +344,11 @@ class MuJoCoParent:
         try:
             collision = [self.data.contact[i].geom1 == geom_1 and self.data.contact[i].geom2 == geom_2
                          for i in range(self.data.ncon)]
+            collision2 = [self.data.contact[i].geom1 == geom_2 and self.data.contact[i].geom2 == geom_1
+                         for i in range(self.data.ncon)]
         except Exception as e:
             raise Exception(f"One of the two objects {geom_1}, {geom_2} not found in data")
-        return any(collision)
+        return any(collision + collision2)
 
     def __export_json(self):
         # ToDo: implement
@@ -468,7 +472,7 @@ class MuJoCoParent:
         # process pending GUI events, call GLFW callbacks
         glfw.poll_events()
 
-    def __scroll(self, y_offset):
+    def __scroll(self, window, x_offset, y_offset):
         """Makes the camera zoom in and out when rendered
 
         Parameters:
