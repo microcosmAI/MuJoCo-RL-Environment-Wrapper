@@ -231,9 +231,6 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
 
         self.timestep += 1
 
-        if terminations["__all__"]:
-            print(rewards)
-
         infos = {agent: {} for agent in self.agents}
         return observations, rewards, terminations, truncations, infos
 
