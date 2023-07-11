@@ -218,15 +218,17 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         for reward in self.reward_functions:
             rewards = {agent: rewards[agent] + reward(self, agent) for agent in self.agents}
 
-        terminations = self.__check_terminations()
+        truncations = self.__check_truncations()
 
-        truncations = {}
+        terminations = {}
         if len(self.done_functions) == 0:
-            truncations = {agent: terminations[agent] for agent in self.agents}
+            terminations = {agent: truncations[agent] for agent in self.agents}
         else:
             for done in self.done_functions:
-                truncations = {agent: terminations[agent] or done(self, agent) for agent in self.agents}
-        truncations["__all__"] = any(truncations.values())
+                terminations = {agent: done(self, agent) for agent in self.agents}
+                terminations["__all__"] = any(terminations.values())
+                if terminations["__all__"] == True:
+                    break
 
         self.timestep += 1
 
@@ -310,26 +312,17 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         observations = {}
         return observations
 
-    def __check_terminations(self) -> dict:
+    def __check_truncations(self) -> dict:
         """Checks whether each agent is terminated
 
         Returns:
-            terminations (dict): A dictionary of booleans indicating whether each agent is terminated #ToDo: i added this, is this correct?
+            truncations (dict): A dictionary of booleans indicating whether each agent is terminated #ToDo: i added this, is this correct?
         """
         if self.timestep >= self.max_steps:
-            terminations = {agent: True for agent in self.agents}
+            truncations = {agent: True for agent in self.agents}
         else:
-            terminations = {agent: False for agent in self.agents}
-        terminations["__all__"] = all(terminations.values())
-        return terminations
-
-    def __truncations_functions(self) -> dict:
-        """Executes the list of truncation functions and returns the truncations for each agent
-        ToDo: to be implemented
-        Returns:
-            truncations (dict): A dictionary of booleans indicating whether each agent is truncated
-        """
-        truncations = {}
+            truncations = {agent: False for agent in self.agents}
+        truncations["__all__"] = all(truncations.values())
         return truncations
 
     def __environment_functions(self) -> [dict, dict, dict]:
