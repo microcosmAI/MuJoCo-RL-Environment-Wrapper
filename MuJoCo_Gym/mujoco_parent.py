@@ -5,6 +5,7 @@ import random
 import numpy as np
 import mujoco as mj
 from mujoco.glfw import glfw
+import json
 
 try:
     from helper import mat2euler_scipy
@@ -350,9 +351,39 @@ class MuJoCoParent:
             raise Exception(f"One of the two objects {geom_1}, {geom_2} not found in data")
         return any(collision + collision2)
 
-    def __export_json(self):
-        # ToDo: implement
-        pass
+    def export_json(self, model, data, filename):
+        """
+        Export the model and data to a json file
+        Parameters:
+            model (Mujoco Model): model to be exported
+            data (Mujoco Data): data to be exported
+            filename (str): name of the file to be exported to
+        """
+        export_dict = {}
+        for i in range(model.ngeom):
+            name = model.geom(i).name
+            if name != "":
+                parents = self.find_object(self.xml_tree.getroot(), name, quats=[])
+                if parents != []:
+                    euler = [0, 0, 0]
+                    body_euler = mat2euler_scipy(data.body(parents[0]["id"]).xmat)
+                    object_euler = mat2euler_scipy(data.geom(i).xmat)
+                    euler = [object_euler[0] - body_euler[0], object_euler[1] - body_euler[1], object_euler[2] - body_euler[2]]
+                else:
+                    euler = mat2euler_scipy(data.geom(i).xmat)
+            else:
+                euler = mat2euler_scipy(data.geom(i).xmat)
+            xpos = data.geom(i).xpos
+            export_dict[i] = {
+                "pos": list(xpos),
+                "quat": list(euler),
+                "size": list(model.geom(i).size),
+                "type": int(model.geom(i).type[0]),
+                "name": str(model.geom(i).name),
+            }
+        json_object = json.dumps(export_dict, indent=4)
+        with open(filename, "w") as outfile:
+            outfile.write(json_object)
 
     def start_render(self):
         """Starts the render window """
