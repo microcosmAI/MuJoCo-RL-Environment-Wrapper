@@ -33,6 +33,7 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         self.done_functions = config_dict.get("doneFunctions", [])
         self.environment_dynamics = config_dict.get("environmentDynamics", [])
         self.agent_cameras = config_dict.get("agentCameras", False)
+        sensor_resolution = config_dict.get("sensorResolution", (64, 64))
 
         self.timestep = 0
         self.start_time = time.time()
@@ -42,7 +43,7 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         self.data_store = {agent: {} for agent in self.agents}
 
         MuJoCoParent.__init__(self, xml_paths=self.xml_paths, export_path=self.export_path, render=self.render_mode, #ToDo: why is this None?
-                              free_joint=self.free_joint, agent_cameras=self.agent_cameras)
+                              free_joint=self.free_joint, agent_cameras=self.agent_cameras, sensor_resolution=sensor_resolution)
         MultiAgentEnv.__init__(self)
 
         self.__instantiateJson()
