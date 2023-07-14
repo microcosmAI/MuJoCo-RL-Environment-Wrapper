@@ -17,7 +17,7 @@ class MuJoCoParent:
     """
 
     def __init__(self, xml_paths, export_path: str = None, render: bool = False, free_joint: bool = False,
-                 agent_cameras: bool = False):
+                 agent_cameras: bool = False, sensor_resolution=(64, 64)):
         """Initializes MujocoParent class
 
         Parameters:
@@ -46,7 +46,7 @@ class MuJoCoParent:
         data = text_file.read()
         self.xml_dict = xmltodict.parse(data)
 
-        self.sensor_resolution = (64, 64)
+        self.sensor_resolution = sensor_resolution
         self.rgb_sensors = {}
 
         if render or agent_cameras:
