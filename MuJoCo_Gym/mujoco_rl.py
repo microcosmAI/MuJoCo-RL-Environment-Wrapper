@@ -48,6 +48,10 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         self.agents = [agent["name"] for agent in self.filter_by_tag("Agent")]
 
         self.data_store = {agent: {} for agent in self.agents}
+        self.data_store["borders"] = [border["name"] + "_geom" for border in self.filter_by_tag("Border")]
+        self.data_store["targets"] = [target["name"] + "_geom" for target in self.filter_by_tag("Target")]
+        self.data_store["distractors"] = [distractor["name"] + "_geom" for distractor in self.filter_by_tag("Distractor")]
+        self.data_store["cameras"] = [camera["name"] + "_camera" for camera in self.filter_by_tag("Camera")]
 
         self.environment_dynamics = [dynamic(self) for dynamic in self.environment_dynamics]
         self._observation_space = self.__create_observation_space()
@@ -264,7 +268,13 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
                 actions = dynamic.action_space["low"]
                 reward, obs = dynamic.dynamic(agent, actions)
                 observations[agent] = np.concatenate((observations[agent], obs))
+
         self.data_store = {agent: {} for agent in self.agents}
+        self.data_store["borders"] = [border["name"] + "_geom" for border in self.filter_by_tag("Border")]
+        self.data_store["targets"] = [target["name"] + "_geom" for target in self.filter_by_tag("Target")]
+        self.data_store["distractors"] = [distractor["name"] + "_geom" for distractor in self.filter_by_tag("Distractor")]
+        self.data_store["cameras"] = [camera["name"] + "_camera" for camera in self.filter_by_tag("Camera")]
+        
         self.timestep = 0
         infos = {agent: {} for agent in self.agents}
         return observations, infos
