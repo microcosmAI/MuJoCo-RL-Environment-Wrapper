@@ -47,7 +47,7 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         self.__instantiateJson()
 
         self.agents = [agent["name"] for agent in self.filter_by_tag("Agent")]
-        self.infos = {agent: {} for agent in self.agents}
+        self.infos = {agent: {"is_success":False} for agent in self.agents}
 
         self.data_store = {agent: {} for agent in self.agents}
         self.data_store["borders"] = [border["name"] + "_geom" for border in self.filter_by_tag("Border")]
@@ -281,7 +281,7 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         self.data_store["success_rate"] = success_rate_tmp
         
         self.timestep = 0
-        self.infos = {agent: {} for agent in self.agents}
+        self.infos = {agent: {"is_success":False} for agent in self.agents}
         return observations, self.infos
     
     def filter_by_tag(self, tag: str) -> list:
@@ -337,21 +337,20 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         if self.timestep >= self.max_steps:
             truncations = {agent: True for agent in self.agents}
             self.data_store["success_rate"].append(0)
-            #self.infos["is_success"] = False
         else:
             truncations = {agent: False for agent in self.agents}
         truncations["__all__"] = all(truncations.values())
         return truncations
 
-    # def __environment_functions(self) -> [dict, dict, dict]:
-    #     """Executes the list of environment functions
-    #     ToDo: to be implemented
-    #     Returns:
-    #         reward (dict): A dictionary of rewards for each agent
-    #         observations (dict): A dictionary of observations for each agent
-    #         infos (dict): A dictionary of dictionaries containing additional information for each agent
-    #     """
-    #     reward = {}
-    #     observations = {}
-    #     self.infos = {}
-    #     return reward, observations, self.infos
+    def __environment_functions(self) -> [dict, dict, dict]:
+        """Executes the list of environment functions
+        ToDo: to be implemented
+        Returns:
+            reward (dict): A dictionary of rewards for each agent
+            observations (dict): A dictionary of observations for each agent
+            infos (dict): A dictionary of dictionaries containing additional information for each agent
+        """
+        reward = {}
+        observations = {}
+        self.infos = {}
+        return reward, observations, self.infos

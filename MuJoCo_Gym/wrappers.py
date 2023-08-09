@@ -68,4 +68,4 @@ class GymWrapper(gym.Env):
     
     def reset(self):
         observations, infos = self.environment.reset()
-        return observations[self.agent], infos
+        return observations[self.agent], infos[self.agent]
