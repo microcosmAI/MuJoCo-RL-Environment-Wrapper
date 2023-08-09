@@ -34,6 +34,7 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         self.agent_cameras = config_dict.get("agentCameras", False)
         sensor_resolution = config_dict.get("sensorResolution", (64, 64))
 
+
         self.timestep = 0
         self.start_time = time.time()
 
@@ -46,12 +47,15 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         self.__instantiateJson()
 
         self.agents = [agent["name"] for agent in self.filter_by_tag("Agent")]
+        self.infos = {agent: {} for agent in self.agents}
 
         self.data_store = {agent: {} for agent in self.agents}
         self.data_store["borders"] = [border["name"] + "_geom" for border in self.filter_by_tag("Border")]
         self.data_store["targets"] = [target["name"] + "_geom" for target in self.filter_by_tag("Target")]
         self.data_store["distractors"] = [distractor["name"] + "_geom" for distractor in self.filter_by_tag("Distractor")]
         self.data_store["cameras"] = [camera["name"] + "_camera" for camera in self.filter_by_tag("Camera")]
+
+        self.data_store["success_rate"] = []
 
         self.environment_dynamics = [dynamic(self) for dynamic in self.environment_dynamics]
         self._observation_space = self.__create_observation_space()
@@ -236,9 +240,7 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
                     break
 
         self.timestep += 1
-
-        infos = {agent: {} for agent in self.agents}
-        return observations, rewards, terminations, truncations, infos
+        return observations, rewards, terminations, truncations, self.infos
 
     def reset(self, *, seed: int = None, options=None) -> [dict, dict]:
         """Resets the environment and returns the observations for each agent
@@ -269,15 +271,18 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
                 reward, obs = dynamic.dynamic(agent, actions)
                 observations[agent] = np.concatenate((observations[agent], obs))
 
+        success_rate_tmp = self.data_store["success_rate"]
+
         self.data_store = {agent: {} for agent in self.agents}
         self.data_store["borders"] = [border["name"] + "_geom" for border in self.filter_by_tag("Border")]
         self.data_store["targets"] = [target["name"] + "_geom" for target in self.filter_by_tag("Target")]
         self.data_store["distractors"] = [distractor["name"] + "_geom" for distractor in self.filter_by_tag("Distractor")]
         self.data_store["cameras"] = [camera["name"] + "_camera" for camera in self.filter_by_tag("Camera")]
+        self.data_store["success_rate"] = success_rate_tmp
         
         self.timestep = 0
-        infos = {agent: {} for agent in self.agents}
-        return observations, infos
+        self.infos = {agent: {} for agent in self.agents}
+        return observations, self.infos
     
     def filter_by_tag(self, tag: str) -> list:
         """Filter environment for object with specific tag
@@ -331,20 +336,22 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         """
         if self.timestep >= self.max_steps:
             truncations = {agent: True for agent in self.agents}
+            self.data_store["success_rate"].append(0)
+            #self.infos["is_success"] = False
         else:
             truncations = {agent: False for agent in self.agents}
         truncations["__all__"] = all(truncations.values())
         return truncations
 
-    def __environment_functions(self) -> [dict, dict, dict]:
-        """Executes the list of environment functions
-        ToDo: to be implemented
-        Returns:
-            reward (dict): A dictionary of rewards for each agent
-            observations (dict): A dictionary of observations for each agent
-            infos (dict): A dictionary of dictionaries containing additional information for each agent
-        """
-        reward = {}
-        observations = {}
-        infos = {}
-        return reward, observations, infos
+    # def __environment_functions(self) -> [dict, dict, dict]:
+    #     """Executes the list of environment functions
+    #     ToDo: to be implemented
+    #     Returns:
+    #         reward (dict): A dictionary of rewards for each agent
+    #         observations (dict): A dictionary of observations for each agent
+    #         infos (dict): A dictionary of dictionaries containing additional information for each agent
+    #     """
+    #     reward = {}
+    #     observations = {}
+    #     self.infos = {}
+    #     return reward, observations, self.infos

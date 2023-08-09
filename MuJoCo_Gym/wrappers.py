@@ -13,7 +13,7 @@ class GymnasiumWrapper(gymnasium.Env):
     """ ToDo: description """
     metadata = {"render_modes": ["human", "none"], "render_fps": 4}
 
-    def __init__(self, environment: MuJoCoRL, render_mode="none") -> None:
+    def __init__(self, environment: MuJoCoRL, agent: str="", render_mode="none") -> None:
         super().__init__()
         self.environment = environment
         self.agent = self.environment.filter_by_tag("Agent")[0]["name"]
@@ -35,7 +35,7 @@ class GymnasiumWrapper(gymnasium.Env):
 
     def reset(self, *, seed=1, options={}):
         observations, infos = self.environment.reset()
-        return observations[self.agent]
+        return observations[self.agent], infos[self.agent]
     
     def render(self):
         pass
@@ -68,4 +68,4 @@ class GymWrapper(gym.Env):
     
     def reset(self):
         observations, infos = self.environment.reset()
-        return observations[self.agent]
+        return observations[self.agent], infos
