@@ -401,14 +401,14 @@ class MuJoCoParent:
         sensor.type = 2
         sensor.fixedcamid = self.model.camera(camera).id
         viewport_width, viewport_height = glfw.get_framebuffer_size(self.sensorWindow)
-        viewport = mj.MjrRect(0, 0, viewport_width, viewport_height)
+        viewport = mj.MjrRect(0, 0, self.sensor_resolution[0], self.sensor_resolution[1])
 
         # Update scene and render
         mj.mjv_updateScene(self.model, self.data, self.opt, None, sensor,
                         mj.mjtCatBit.mjCAT_ALL.value, self.scene)
         mj.mjr_render(viewport, self.scene, self.context)
         data = np.array(self.__get_rgbd_buffer(viewport, self.context))
-        return data.reshape((viewport_width, viewport_height, 3))
+        return data.reshape((self.sensor_resolution[0], self.sensor_resolution[1], 3))
 
     def get_camera_data(self, cam_object: str) -> np.array:
         """Returns the data of all cameras attached to an agent
