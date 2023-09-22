@@ -52,6 +52,7 @@ class MuJoCoParent:
 
         if render or agent_cameras:
             glfw.init()
+            glfw.window_hint(glfw.VISIBLE, glfw.FALSE)
             self.opt = mj.MjvOption()
             self.window = glfw.create_window(1200, 900, "Demo", None, None)
             glfw.make_context_current(self.window)
