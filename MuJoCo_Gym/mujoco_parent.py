@@ -211,8 +211,10 @@ class MuJoCoParent:
             skip_frames (int): The number of frames to skip after applying the action.
         """
         for agent in actions.keys():
+            
             if self.free_joint:
                 self.data.qvel[self.agents_action_index[agent]] = actions[agent]
+                self.data.qvel[[3,4]] = [0,0]
             else:
                 try:
                     action_indexs = self.agents_action_index[agent] # ToDo: mistake of "s"?
@@ -221,7 +223,23 @@ class MuJoCoParent:
                 except IndexError:
                     print(f"The number of actions for agent {agent} is not correct.")
 
+        # Do a simulation step in mujoco
+        mj.mj_step(self.model, self.data)
+
         for _ in range(skip_frames):
+            for agent in actions.keys():
+                
+                if self.free_joint:
+                    self.data.qvel[self.agents_action_index[agent]] = actions[agent]
+                    self.data.qvel[[3,4]] = [0,0]
+                else:
+                    try:
+                        action_indexs = self.agents_action_index[agent] # ToDo: mistake of "s"?
+                        mujoco_actions = actions[agent][:len(self.agents_action_index[agent])]
+                        self.data.ctrl[action_indexs] = mujoco_actions
+                    except IndexError:
+                        print(f"The number of actions for agent {agent} is not correct.")
+
             mj.mj_step(self.model, self.data)
             self.frame += 1
         if self.render and self.data.time - self.previous_time > 1.0/30.0:
