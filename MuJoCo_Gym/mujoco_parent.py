@@ -17,7 +17,7 @@ class MuJoCoParent:
     """
 
     def __init__(self, xml_paths, export_path: str = None, render: bool = False, free_joint: bool = False,
-                 agent_cameras: bool = False, sensor_resolution=(64, 64)):
+                 agent_cameras: bool = False, sensor_resolution=(64, 64), disable_window=False):
         """Initializes MujocoParent class
 
         Parameters:
@@ -52,6 +52,8 @@ class MuJoCoParent:
         if render or agent_cameras:
             glfw.init()
             self.opt = mj.MjvOption()
+            if disable_window:
+                glfw.window_hint(glfw.VISIBLE, glfw.FALSE)
             self.window = glfw.create_window(1200, 900, "Demo", None, None)
             glfw.make_context_current(self.window)
             glfw.swap_interval(1)
@@ -181,10 +183,11 @@ class MuJoCoParent:
                 raise Exception(f"The agent {agent} has to have a free joint")
             if free_joint["@type"] == "free":
                 idx = self.model.joint(free_joint["@name"]).dofadr[0]
-                for _ in range(3):
+                for _ in range(2):
                     action_space["low"].append(-1)
                     action_space["high"].append(1)
-                indices = [idx, idx+1, idx+5]
+                #here indices = [idx, idx+1, idx+5]
+                indices = [idx+1, idx+5]
                 self.agents_action_index[agent] = indices
                 return action_space
             else:
