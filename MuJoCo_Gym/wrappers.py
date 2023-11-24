@@ -1,18 +1,19 @@
 try:
-    from mujoco_rl import MuJoCo_RL # Used during development
+    from mujoco_rl import MuJoCoRL  # Used during development
 except:
-    from MuJoCo_Gym.mujoco_rl import MuJoCo_RL # Used as a pip package
+    from MuJoCo_Gym.mujoco_rl import MuJoCoRL # Used as a pip package
 
 import gym
 import gym.spaces.box as gymBox
-from gymnasium.spaces.box import Box
 import gymnasium
+from gymnasium.spaces.box import Box
+
 
 class GymnasiumWrapper(gymnasium.Env):
-
+    """ ToDo: description """
     metadata = {"render_modes": ["human", "none"], "render_fps": 4}
 
-    def __init__(self, environment: MuJoCo_RL, agent: str, render_mode="none") -> None:
+    def __init__(self, environment: MuJoCoRL, agent: str, render_mode="none") -> None:
         super().__init__()
         self.environment = environment
         self.agent = agent
@@ -36,13 +37,14 @@ class GymnasiumWrapper(gymnasium.Env):
         observations, infos = self.environment.reset()
         return observations[self.agent]
     
-    def render():
+    def render(self):
         pass
 
 class GymWrapper(gym.Env):
+    """ ToDo: description """
     metadata = {"render_modes": ["human", "none"], "render_fps": 4}
 
-    def __init__(self, environment: MuJoCo_RL, agent: str, render_mode="none") -> None:
+    def __init__(self, environment: MuJoCoRL, agent: str, render_mode="none") -> None:
         super().__init__()
         self.environment = environment
         self.agent = agent
@@ -63,3 +65,7 @@ class GymWrapper(gym.Env):
             done = False
         
         return observations[self.agent], rewards[self.agent], done, infos[self.agent]
+    
+    def reset(self):
+        observations, infos = self.environment.reset()
+        return observations[self.agent]

@@ -24,7 +24,7 @@ class Pick_Up_Dynamic():
         if "inventory" not in self.mujoco_gym.data_store.keys():
             self.mujoco_gym.data_store["inventory"] = [0]
         if "targets" not in self.mujoco_gym.data_store.keys():
-            self.mujoco_gym.data_store["targets"] = self.mujoco_gym.filterByTag("target")
+            self.mujoco_gym.data_store["targets"] = self.mujoco_gym.filter_by_tag("target")
             self.mujoco_gym.data_store["current_target"] = self.mujoco_gym.data_store["targets"][random.randint(0, len(self.mujoco_gym.data_store["targets"]) - 1)]["name"]
         distance = self.mujoco_gym.calculate_distance("torso", self.mujoco_gym.data_store["current_target"])
         if distance < 2:
