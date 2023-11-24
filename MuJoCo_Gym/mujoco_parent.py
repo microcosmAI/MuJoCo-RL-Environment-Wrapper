@@ -219,7 +219,7 @@ class MuJoCoParent:
             action_space (np.array): The action space of the environment
         """
         action_space = {"low": [], "high": []}
-        action_indexs = []      # ToDo: is the "s" a mistake?
+        action_indexs = []
         agent_dict = self.__find_in_nested_dict(self.xml_dict, name=agent, filter_key="@name")
         agent_joints = self.__find_in_nested_dict(agent_dict, parent="joint")
         if self.free_joint:
@@ -527,10 +527,13 @@ class MuJoCoParent:
         glfw.poll_events()
 
     def __scroll(self, window, x_offset, y_offset):
-        """Makes the camera zoom in and out when rendered
+        """
+        Scroll the camera in the MuJoCo environment.
 
         Parameters:
-            y_offset (float): y offset
+            window: The window object.
+            x_offset: The horizontal offset of the scroll.
+            y_offset: The vertical offset of the scroll.
         """
         action = mj.mjtMouse.mjMOUSE_ZOOM
         mj.mjv_moveCamera(self.model, action, 0.0, -0.05 * y_offset, self.scene, self.cam)

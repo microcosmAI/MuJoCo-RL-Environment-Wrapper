@@ -15,11 +15,37 @@ except:
 
 
 class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
-    """ ToDo: description
+    """A class representing a MuJoCo Reinforcement Learning environment.
+
+    Args:
+        config_dict (dict): A dictionary containing the configuration parameters for the environment.
 
     Attributes:
-        config_dict (dict): Config dictionary containing user settings
+        agents (list): A list of agent names in the environment.
+        xml_paths (str or list): The path(s) to the XML file(s) defining the MuJoCo model(s) for the environment.
+        info_jsons (str or list): The path(s) to the JSON file(s) containing additional information about the environment.
+        render_mode (bool): A flag indicating whether to render the environment.
+        export_path (str): The path to export the environment.
+        free_joint (bool): A flag indicating whether to enable free joint movement.
+        skip_frames (int): The number of frames to skip between each step.
+        max_steps (int): The maximum number of steps in the environment.
+        reward_functions (list): A list of reward functions for the environment.
+        done_functions (list): A list of done functions for the environment.
+        environment_dynamics (list): A list of environment dynamics classes.
+        agent_cameras (bool): A flag indicating whether to enable agent cameras.
+        sensor_resolution (tuple): The resolution of the sensors in the environment.
+
+    Methods:
+        __init__(self, config_dict: dict): Initializes the MuJoCoRL environment.
+        __instantiateJson(self): Instantiates the JSON file(s) for the environment.
+        __check_dynamics(self, environment_dynamics: list): Checks the output of the dynamic function in each Dynamic Class.
+        __check_done_functions(self, done_functions: list): Checks the output of each done function.
+        __check_reward_functions(self, reward_functions: list): Checks the output of each reward function.
+        __create_action_space(self) -> dict: Creates the action space for the environment.
+        __create_observation_space(self) -> dict: Creates the observation space for the environment.
+        step(self, action: dict) -> [dict, dict, dict, dict]: Applies the actions for each agent and returns the observations, rewards, terminations, truncations, and infos for each agent.
     """
+    
     def __init__(self, config_dict: dict):
         self.agents = config_dict.get("agents", [])
         self.xml_paths = config_dict.get("xmlPath")
