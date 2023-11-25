@@ -202,7 +202,8 @@ class MuJoCoParent:
         indices = self.__create_sensor_index_dict(sensor_dict)
 
         # Extracts the indices of the sensors that are attached to the agent.
-        agent_sensors = process_sensors(indices, agent_sites)
+        agent_indices, agent_sensors = process_sensors(indices, agent_sites)
+        self.agents_observation_index[agent] = agent_indices
 
         # Creates the observation space from the sensors and its corresponding indizes.
         observation_space = create_observation_space(agent_sensors)

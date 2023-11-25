@@ -116,7 +116,7 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         """
         for environment_dynamic_instance in environment_dynamics:
             actions = environment_dynamic_instance.action_space["low"]
-            reward, observations = environment_dynamic_instance.dynamic(self.agents[0], actions)
+            reward, observations, done, info = environment_dynamic_instance.dynamic(self.agents[0], actions)
             # check observations
             if not len(environment_dynamic_instance.observation_space["low"]) == len(observations):
                 raise Exception(f"Observation, the second return variable of dynamic function, must match length"
@@ -204,6 +204,33 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
                 observation_space[agent]["high"] += dynamic.observation_space["high"]
             new_observation_space[agent] = Box(low=np.array(observation_space[agent]["low"]), high=np.array(observation_space[agent]["high"]))
         return new_observation_space
+    
+    def __apply_dynamics(self, action: dict, observations: dict, rewards: dict, terminations: dict, infos: dict, data_store_copies: list):
+            """
+            Applies the dynamics of the environment to update the observations, rewards, terminations, and infos for each agent.
+
+            Args:
+                action (dict): A dictionary containing the actions for each agent.
+                observations (dict): A dictionary containing the observations for each agent.
+                rewards (dict): A dictionary containing the rewards for each agent.
+                terminations (dict): A dictionary containing the termination status for each agent.
+                infos (dict): A dictionary containing additional information for each agent.
+                data_store_copies (list): A list of data store copies for each environment dynamic.
+
+            Returns:
+                tuple: A tuple containing the updated observations, rewards, terminations, infos, and data store copies.
+            """
+            for i, dynamic in enumerate(self.environment_dynamics):
+                self.data_store = data_store_copies[i]
+                for agent in self.agents:
+                    dynamic_indizes = self.action_routing["dynamic"][dynamic.__class__.__name__]
+                    dynamic_actions = action[agent][dynamic_indizes[0]:dynamic_indizes[1]]
+                    reward, obs, done, info = dynamic.dynamic(agent, dynamic_actions)
+                    observations[agent] = np.concatenate((observations[agent], obs))
+                    rewards[agent] += reward
+                    terminations[agent] = any([terminations[agent], done])
+                    infos[agent][dynamic.__class__.__name__] = info
+            return observations, rewards, terminations, infos, data_store_copies
 
     def step(self, action: dict) -> [dict, dict, dict, dict]:
         """Applies the actions for each agent and returns the observations, rewards, terminations, truncations,
@@ -222,20 +249,15 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         mujoco_actions = {key: action[key][self.action_routing["physical"][0]:self.action_routing["physical"][1]]
                           for key in action.keys()}
         self.apply_action(mujoco_actions, skip_frames=self.skip_frames)
+
         observations = {agent: self.get_sensor_data(agent) for agent in self.agents}
         rewards = {agent: 0 for agent in self.agents}
-
+        terminations = {agent: False for agent in self.agents}
+        infos = {agent: {} for agent in self.agents}
         data_store_copies = [copy.deepcopy(self.data_store) for _ in range(len(self.environment_dynamics))]
         original_data_store = copy.deepcopy(self.data_store)
 
-        for i, dynamic in enumerate(self.environment_dynamics):
-            self.data_store = data_store_copies[i]
-            for agent in self.agents:
-                dynamic_indizes = self.action_routing["dynamic"][dynamic.__class__.__name__]
-                dynamic_actions = action[agent][dynamic_indizes[0]:dynamic_indizes[1]]
-                reward, obs = dynamic.dynamic(agent, dynamic_actions)
-                observations[agent] = np.concatenate((observations[agent], obs))
-                rewards[agent] += reward
+        observations, rewards, terminations, infos, data_store_copies = self.__apply_dynamics(action, observations, rewards, terminations, infos, data_store_copies)
 
         self.data_store = original_data_store
         for data in data_store_copies:
@@ -246,19 +268,14 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
 
         truncations = self.__check_truncations()
 
-        terminations = {}
-        if len(self.done_functions) == 0:
-            terminations = {agent: truncations[agent] for agent in self.agents}
-        else:
+        if len(self.done_functions) != 0:
             for done in self.done_functions:
-                terminations = {agent: done(self, agent) for agent in self.agents}
+                terminations = {agent: any([terminations[agent], done(self, agent)]) for agent in self.agents}
                 terminations["__all__"] = any(terminations.values())
                 if terminations["__all__"] == True:
                     break
 
         self.timestep += 1
-
-        infos = {agent: {} for agent in self.agents}
         return observations, rewards, terminations, truncations, infos
 
     def reset(self, *, seed: int = None, options=None) -> [dict, dict]:
@@ -282,16 +299,23 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
             self.info_json = json.load(json_file)
             self.info_name_list = [key for key in self.info_json["environment"]["objects"].keys()]
 
-        observations = {agent: self.get_sensor_data(agent) for agent in self.agents}
-
-        for dynamic in self.environment_dynamics:
-            for agent in self.agents:
-                actions = dynamic.action_space["low"]
-                reward, obs = dynamic.dynamic(agent, actions)
-                observations[agent] = np.concatenate((observations[agent], obs))
         self.data_store = {agent: {} for agent in self.agents}
-        self.timestep = 0
+
+        observations = {agent: self.get_sensor_data(agent) for agent in self.agents}
+        action = {agent: self.action_space.sample() for agent in self.agents}
+        rewards = {agent: 0 for agent in self.agents}
+        terminations = {agent: False for agent in self.agents}
         infos = {agent: {} for agent in self.agents}
+        data_store_copies = [copy.deepcopy(self.data_store) for _ in range(len(self.environment_dynamics))]
+        original_data_store = copy.deepcopy(self.data_store)
+
+        observations, rewards, terminations, infos, data_store_copies = self.__apply_dynamics(action, observations, rewards, terminations, infos, data_store_copies)
+
+        self.data_store = original_data_store
+        for data in data_store_copies:
+            self.data_store = update_deep(self.data_store, data)
+
+        self.timestep = 0
         return observations, infos
     
     def filter_by_tag(self, tag: str) -> list:
