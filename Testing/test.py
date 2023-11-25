@@ -1,8 +1,18 @@
 from MuJoCo_Gym.mujoco_rl import *
+import numpy as np
 
 # xml_files = ["Testing/levels/" + file for file in os.listdir("Testing/levels/")]
 xml_files = "Testing/levels/Model1.xml"
 agents = ["sender", "receiver"]
+
+class EnvironmentDynamic:
+    def __init__(self, environment):
+        self.environment = environment
+        self.observation_space = {"low": [], "high": []}
+        self.action_space = {"low": [], "high": []}
+
+    def dynamic(self, agent, actions):
+        return 0, np.array([]), False, {}
 
 config_dict = {"xmlPath":xml_files, 
                    "agents":agents, 
@@ -16,8 +26,6 @@ config_dict = {"xmlPath":xml_files,
                    "agentCameras":True}
 
 env = MuJoCoRL(config_dict=config_dict)
-
-exit()
 
 for i in range(100):
     env.reset()
