@@ -224,7 +224,7 @@ class MuJoCoParent:
                 index_mask=np.zeros(6, dtype="bool")
                 index_mask[action_index] = True
                 self.data.qvel[index_mask] = actions[agent]
-                self.data.qvel[not index_mask] = 0.0
+                self.data.qvel[index_mask == False] = 0.0
             else:
                 try:
                     action_indexs = self.agents_action_index[agent] # ToDo: mistake of "s"?
