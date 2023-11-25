@@ -57,7 +57,7 @@ def process_sensors(indices, agent_sites):
         new_indices[sensor_name], index = process_sensor(sensor_info, index)
 
     agent_indices, agent_sensors = extract_agent_indices(new_indices, agent_sites)
-    return agent_sensors
+    return agent_indices, agent_sensors
 
 
 def create_observation_space(agent_sensors):
