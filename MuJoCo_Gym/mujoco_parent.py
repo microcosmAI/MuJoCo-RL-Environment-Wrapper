@@ -10,6 +10,9 @@ try:
     from helper import mat2euler_scipy
 except:
     from MuJoCo_Gym.helper import mat2euler_scipy
+    
+INDICES = [0, 1, 5]
+#INDICES = [idx+1, idx+5]
 
 
 class MuJoCoParent:
@@ -183,11 +186,12 @@ class MuJoCoParent:
                 raise Exception(f"The agent {agent} has to have a free joint")
             if free_joint["@type"] == "free":
                 idx = self.model.joint(free_joint["@name"]).dofadr[0]
-                for _ in range(2):
+                for _ in range(len(INDICES)):
                     action_space["low"].append(-1)
                     action_space["high"].append(1)
+                
                 #here indices = [idx, idx+1, idx+5]
-                indices = [idx+1, idx+5]
+                indices = INDICES + idx
                 self.agents_action_index[agent] = indices
                 return action_space
             else:
@@ -216,8 +220,11 @@ class MuJoCoParent:
         for agent in actions.keys():
             
             if self.free_joint:
-                self.data.qvel[self.agents_action_index[agent]] = actions[agent]
-                self.data.qvel[[3,4]] = [0,0]
+                action_index=self.agents_action_index[agent]
+                index_mask=np.zeros(6, dtype="bool")
+                index_mask[action_index] = True
+                self.data.qvel[index_mask] = actions[agent]
+                self.data.qvel[not index_mask] = 0.0
             else:
                 try:
                     action_indexs = self.agents_action_index[agent] # ToDo: mistake of "s"?
