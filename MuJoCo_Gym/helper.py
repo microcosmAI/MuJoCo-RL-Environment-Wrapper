@@ -19,7 +19,16 @@ def mat2euler_scipy(mat: np.array) -> np.array:
 
 
 def update_deep(d, u):
-    """ ToDo: no clue what this is for """
+    """
+    Recursively updates a dictionary with the values from another dictionary.
+    
+    Args:
+        d (dict): The dictionary to be updated.
+        u (dict): The dictionary containing the values to update with.
+        
+    Returns:
+        dict: The updated dictionary.
+    """
     for k, v in u.items():
         if isinstance(v, collections.abc.Mapping):
             d[k] = update_deep(d.get(k, {}), v)
