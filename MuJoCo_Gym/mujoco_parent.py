@@ -220,10 +220,15 @@ class MuJoCoParent:
         for agent in actions.keys():
             
             if self.free_joint:
+                # Masking ensures that the agent cannot tilt or move in the z direction by setting the velocities to 0.
                 action_index=self.agents_action_index[agent]
                 index_mask=np.zeros(6, dtype="bool")
                 index_mask[action_index] = True
-                self.data.qvel[index_mask] = actions[agent]
+
+                # Rotates the action to the orientation of the agent.
+                rotated_action = np.zeros(3)
+                mj.mju_rotVecQuat(rotated_action, actions[agent], self.data.qpos[3:])
+                self.data.qvel[index_mask] = rotated_action
                 self.data.qvel[index_mask == False] = 0.0
             else:
                 try:
@@ -240,8 +245,16 @@ class MuJoCoParent:
             for agent in actions.keys():
                 
                 if self.free_joint:
-                    self.data.qvel[self.agents_action_index[agent]] = actions[agent]
-                    self.data.qvel[[3,4]] = [0,0]
+                    # Masking ensures that the agent cannot tilt or move in the z direction by setting the velocities to 0.
+                    action_index=self.agents_action_index[agent]
+                    index_mask=np.zeros(6, dtype="bool")
+                    index_mask[action_index] = True
+
+                    # Rotates the action to the orientation of the agent.
+                    rotated_action = np.zeros(3)
+                    mj.mju_rotVecQuat(rotated_action, actions[agent], self.data.qpos[3:])
+                    self.data.qvel[index_mask] = actions[agent]
+                    self.data.qvel[index_mask == False] = 0.0
                 else:
                     try:
                         action_indexs = self.agents_action_index[agent] # ToDo: mistake of "s"?
