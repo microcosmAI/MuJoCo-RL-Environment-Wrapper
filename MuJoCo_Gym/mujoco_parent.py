@@ -253,7 +253,7 @@ class MuJoCoParent:
                     # Rotates the action to the orientation of the agent.
                     rotated_action = np.zeros(3)
                     mj.mju_rotVecQuat(rotated_action, actions[agent], self.data.qpos[3:])
-                    self.data.qvel[index_mask] = actions[agent]
+                    self.data.qvel[index_mask] = rotated_action
                     self.data.qvel[index_mask == False] = 0.0
                 else:
                     try:
