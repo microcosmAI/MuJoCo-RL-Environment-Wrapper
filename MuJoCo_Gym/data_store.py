@@ -1,3 +1,5 @@
+import copy
+
 class DataStore:
     """
     A dictionary-like data structure that restricts access based on agents.
@@ -30,6 +32,15 @@ class DataStore:
         self.data = {agent: {} for agent in agents}
         self.buffer = {agent: {} for agent in agents}
         self.current_agent = None
+        self.agents = agents
+
+    def reset(self):
+        """
+        Resets the data store to its initial state.
+        """
+        self.data = {agent: {} for agent in self.agents}
+        self.buffer = {agent: {} for agent in self.agents}
+        self.current_agent = None
 
     def set_agent(self, agent):
         """
@@ -61,6 +72,17 @@ class DataStore:
         if agent not in self.data:
             raise ValueError(f"Agent {agent} is not allowed to read from this dictionary.")
         return self.data[agent]
+    
+    def keys(self, agent=None):
+        """
+        Returns the keys of the data store.
+        """
+        if agent is "global":
+            return self.data.keys()
+        elif agent is not None:
+            return self.data[agent].keys()
+        else:
+            return self.data[self.current_agent].keys()
 
     def __getitem__(self, key):
         """
@@ -92,7 +114,7 @@ class DataStore:
         """
         if self.current_agent is None:
             raise ValueError("No agent is currently set.")
-        if self.current_agent not in self.data:
+        if self.current_agent not in self.data.keys():
             raise ValueError(f"Agent {self.current_agent} is not allowed to write to this dictionary.")
         if self.current_agent == "global":
             self.buffer[key] = value
