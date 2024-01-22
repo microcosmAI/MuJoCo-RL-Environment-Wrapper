@@ -72,7 +72,7 @@ class GymnasiumWrapper(gymnasium.Env):
 
         """
         observations, infos = self.environment.reset()
-        return observations[self.agent]
+        return observations[self.agent], infos
     
     def render(self):
         """

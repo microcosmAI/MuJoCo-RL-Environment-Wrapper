@@ -18,20 +18,14 @@ def mat2euler_scipy(mat: np.array) -> np.array:
     return euler
 
 
-def update_deep(d, u):
+def update_deep(old_dict, new_dict):
     """
-    Recursively updates a dictionary with the values from another dictionary.
-    
-    Args:
-        d (dict): The dictionary to be updated.
-        u (dict): The dictionary containing the values to update with.
-        
-    Returns:
-        dict: The updated dictionary.
+    Recursively updates old_dict with values from new_dict. 
+    If a key in new_dict corresponds to a dictionary, it updates the corresponding dictionary in old_dict recursively.
     """
-    for k, v in u.items():
-        if isinstance(v, collections.abc.Mapping):
-            d[k] = update_deep(d.get(k, {}), v)
+    for key, value in new_dict.items():
+        if key in old_dict and isinstance(old_dict[key], dict) and isinstance(value, dict):
+            update_deep(old_dict[key], value)
         else:
-            d[k] = v
-    return d
+            old_dict[key] = value
+    return old_dict

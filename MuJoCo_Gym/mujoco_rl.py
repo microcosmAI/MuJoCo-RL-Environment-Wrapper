@@ -221,7 +221,7 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
                 tuple: A tuple containing the updated observations, rewards, terminations, infos, and data store copies.
             """
             for i, dynamic in enumerate(self.environment_dynamics):
-                self.data_store = data_store_copies[i]
+                # self.data_store = data_store_copies[i]
                 for agent in self.agents:
                     dynamic_indizes = self.action_routing["dynamic"][dynamic.__class__.__name__]
                     dynamic_actions = action[agent][dynamic_indizes[0]:dynamic_indizes[1]]
@@ -232,7 +232,7 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
                     infos[agent][dynamic.__class__.__name__] = info
             return observations, rewards, terminations, infos, data_store_copies
 
-    def step(self, action: dict) -> [dict, dict, dict, dict]:
+    def step(self, action: dict) -> [dict, dict, dict, dict, dict]:
         """Applies the actions for each agent and returns the observations, rewards, terminations, truncations,
            and infos for each agent
 
@@ -259,9 +259,9 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
 
         observations, rewards, terminations, infos, data_store_copies = self.__apply_dynamics(action, observations, rewards, terminations, infos, data_store_copies)
 
-        self.data_store = original_data_store
-        for data in data_store_copies:
-            self.data_store = update_deep(self.data_store, data)
+        # self.data_store = original_data_store
+        # for data in data_store_copies:
+        #     self.data_store = update_deep(self.data_store, data)
 
         for reward in self.reward_functions:
             rewards = {agent: rewards[agent] + reward(self, agent) for agent in self.agents}
