@@ -73,12 +73,79 @@ def create_observation_space(agent_sensors):
     observation_space = {"low": [], "high": []}
     # Creates the observation space from the sensors.
     for sensor_type in agent_sensors:
-        if sensor_type["type"] == "rangefinder":
-            observation_space["low"].append(-1)
-            observation_space["high"].append(float(sensor_type["cutoff"]))
-        elif sensor_type["type"] == "frameyaxis":
-            for _ in range(3):
-                observation_space["low"].append(-360)
-                observation_space["high"].append(360)
+        match sensor_type["type"]:
+            case "frameyaxis":
+                for _ in range(3):
+                    observation_space["low"].append(-1)
+                    observation_space["high"].append(1)
+            case "framezaxis":
+                for _ in range(3):
+                    observation_space["low"].append(-1)
+                    observation_space["high"].append(1)
+            case "framexaxis":
+                for _ in range(3):
+                    observation_space["low"].append(-1)
+                    observation_space["high"].append(1)
+            case "rangefinder":
+                observation_space["low"].append(-1)
+                observation_space["high"].append(float(sensor_type["cutoff"]))
+            case "touch":
+                observation_space["low"].append(0)
+                observation_space["high"].append(float(sensor_type["cutoff"]))
+            case "accelerometer":
+                for _ in range(3):
+                    observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
+                    observation_space["high"].append(float(sensor_type["cutoff"]))
+            case "velocimeter":
+                for _ in range(3):
+                    observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
+                    observation_space["high"].append(float(sensor_type["cutoff"]))
+            case "gyro":
+                for _ in range(3):
+                    observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
+                    observation_space["high"].append(float(sensor_type["cutoff"]))
+            case "force":
+                for _ in range(3):
+                    observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
+                    observation_space["high"].append(float(sensor_type["cutoff"]))
+            case "torque":
+                for _ in range(3):
+                    observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
+                    observation_space["high"].append(float(sensor_type["cutoff"]))
+            case "magnetometer":
+                for _ in range(3):
+                    observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
+                    observation_space["high"].append(float(sensor_type["cutoff"]))
+            case "jointpos":
+                observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
+                observation_space["high"].append(float(sensor_type["cutoff"]))
+            case "jointvel":
+                observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
+                observation_space["high"].append(float(sensor_type["cutoff"]))
+            case "tendonpos":
+                observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
+                observation_space["high"].append(float(sensor_type["cutoff"]))
+            case "tendonvel":
+                observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
+                observation_space["high"].append(float(sensor_type["cutoff"]))
+            case "actuatorpos":
+                observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
+                observation_space["high"].append(float(sensor_type["cutoff"]))
+            case "actuatorvel":
+                observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
+                observation_space["high"].append(float(sensor_type["cutoff"]))
+            case "actuatorfrc":
+                observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
+                observation_space["high"].append(float(sensor_type["cutoff"]))
+            case "ballquat":
+                for _ in range(4):
+                    observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
+                    observation_space["high"].append(float(sensor_type["cutoff"]))
 
+    '''
+    case "frameyaxis":
+                for _ in range(3):
+                    observation_space["low"].append(-360)
+                    observation_space["high"].append(360)
+    '''
     return observation_space
