@@ -33,7 +33,8 @@ def extract_agent_indices(new_indices, agent_sites):
     agent_indices (list): A list of indices corresponding to agent sensors.
     agent_sensors (list): A list of dictionaries representing agent sensors.
     """
-    agent_sensors = [current for current in new_indices.values() if current["site"] in [site["@name"] for site in agent_sites]]
+    agent_sensors = [current for current in new_indices.values() if
+                     current["site"] in [site["@name"] for site in agent_sites]]
     agent_indices = [item for sublist in (current["indices"] for current in agent_sensors) for item in sublist]
     return agent_indices, agent_sensors
 
@@ -74,70 +75,24 @@ def create_observation_space(agent_sensors):
     # Creates the observation space from the sensors.
     for sensor_type in agent_sensors:
         match sensor_type["type"]:
-            case "touch": #the observation space with a minimum value of 0 and a maximum value of positive infinity. Adjust the high value according to your specific requirements.
+            case "touch", "actuatorpos", "clock":
                 observation_space["low"].append(0)
                 observation_space["high"].append(float(sensor_type["cutoff"]))
-            case "accelerometer":
+            case ("accelerometer", "velocimeter", "gyro", "force", "torque", "magnetometer", "framepos", "ballangvel",
+                  "framelinvel", "frameangvel", "framelinacc", "frameangacc"):
                 for _ in range(3):
                     observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
                     observation_space["high"].append(float(sensor_type["cutoff"]))
-            case "velocimeter":
-                for _ in range(3):
-                    observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
-                    observation_space["high"].append(float(sensor_type["cutoff"]))
-            case "gyro":
-                for _ in range(3):
-                    observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
-                    observation_space["high"].append(float(sensor_type["cutoff"]))
-            case "force":
-                for _ in range(3):
-                    observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
-                    observation_space["high"].append(float(sensor_type["cutoff"]))
-            case "torque":
-                for _ in range(3):
-                    observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
-                    observation_space["high"].append(float(sensor_type["cutoff"]))
-            case "magnetometer":
-                for _ in range(3):
-                    observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
-                    observation_space["high"].append(float(sensor_type["cutoff"]))
-            case "rangefinder":
-                observation_space["low"].append(-1)
-                observation_space["high"].append(float(sensor_type["cutoff"]))
+            case ("rangefinder",
+                  "jointlimitpos", "jointlimitvel", "jointlimitfrc",
+                  "tendonlimitpos", "tendonlimitvel", "tendonlimitfrc"):
+                observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
+                observation_space["high"].append(0)
             case "camprojection":
-                observation_space["low"].append(0)  # the pixel coordinates in the camera projection sensor range from 0 to 1000.
-                observation_space["high"].append(1000)
-            case "jointpos", "jointvel":
-                observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
-                observation_space["high"].append(float(sensor_type["cutoff"]))
-            case "tendonpos", "tendonvel":
-                observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
-                observation_space["high"].append(float(sensor_type["cutoff"]))
-            case "actuatorpos", "actuatorvel", "actuatorfrc":
-                observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
-                observation_space["high"].append(float(sensor_type["cutoff"]))
-            case "jointactuatorfrc":   
-                observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
-                observation_space["high"].append(float(sensor_type["cutoff"]))
-            case "ballquat":
-                for _ in range(4):
-                    observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
+                for _ in range(2):  # 2D projection
+                    observation_space["low"].append(0)
                     observation_space["high"].append(float(sensor_type["cutoff"]))
-            case "ballangvel":
-                for _ in range(3):
-                    observation_space["low"].append(-1 * float(sensor_type["cutoff"]))  # Example value, adjust as needed
-                    observation_space["high"].append(float(sensor_type["cutoff"]))
-            case "jointlimitpos", "jointlimitvel", "jointlimitfrc":
-                observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
-                observation_space["high"].append(float(sensor_type["cutoff"]))
-            case "tendonlimitpos", "tendonlimitvel", "tendonlimitfrc":
-                observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
-                observation_space["high"].append(float(sensor_type["cutoff"]))
-            case "framepos":
-                for _ in range(3):
-                    observation_space["low"].append(-float(sensor_type["cutoff"]))  
-                    observation_space["high"].append(float(sensor_type["cutoff"]))  
-            case "framequat":
+            case "ballquat", "framequat":
                 for _ in range(4):
                     observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
                     observation_space["high"].append(float(sensor_type["cutoff"]))
@@ -145,50 +100,22 @@ def create_observation_space(agent_sensors):
                 for _ in range(3):
                     observation_space["low"].append(-1)
                     observation_space["high"].append(1)
-            case "framelinvel", "frameangvel", "framelinacc", "frameangacc":
-                for _ in range(3):
-                    observation_space["low"].append(-float(sensor_type["cutoff"]))  
-                    observation_space["high"].append(float(sensor_type["cutoff"]))    
-            case "subtreecom":
+            case ("subtreecom", "subtreelinvel", "subtreeangmom", "jointpos", "jointvel", "tendonpos", "tendonvel",
+                  "actuatorvel", "actuatorfrc", "jointactuatorfrc"):
                 observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
                 observation_space["high"].append(float(sensor_type["cutoff"]))
-            case "subtreelinvel":
-                observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
-                observation_space["high"].append(float(sensor_type["cutoff"]))  
-            case "subtreeangmom":
-                observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
-                observation_space["high"].append(float(sensor_type["cutoff"]))
-            case "clock":
-                observation_space["low"].append(0)  
-                observation_space["high"].append(float('inf'))  # Example value, adjust as needed
             case "user":
-                observation_space["low"].append(-1)  
-                observation_space["high"].append(1) 
+                observation_space["low"].append(-1)
+                observation_space["high"].append(1)
             case "plugin":
                 # Handle plugin sensor type
                 # The observation space for plugin sensors may vary widely, depending on the plugin
                 # need to determine the observation space based on the specific plugin and its functionality
                 # with arbitrary values:
-                observation_space["low"].append(0)  
-                observation_space["high"].append(100)  
-
-            # Add cases for other sensor types as needed
-            
-            
-    
-    '''
-    case "frameyaxis":
-                for _ in range(3):
-                    observation_space["low"].append(-360)
-                    observation_space["high"].append(360)
-                
-    '''
+                observation_space["low"].append(0)
+                observation_space["high"].append(100)
 
     return observation_space
-
-
-
-
 
 
 '''
