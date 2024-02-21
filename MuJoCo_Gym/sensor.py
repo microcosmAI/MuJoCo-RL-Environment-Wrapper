@@ -83,9 +83,8 @@ def create_observation_space(agent_sensors):
                 for _ in range(3):
                     observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
                     observation_space["high"].append(float(sensor_type["cutoff"]))
-            case ("rangefinder",
-                  "jointlimitpos", "jointlimitvel", "jointlimitfrc",
-                  "tendonlimitpos", "tendonlimitvel", "tendonlimitfrc"):
+            case ("rangefinder", "jointlimitpos", "jointlimitvel", "jointlimitfrc", "tendonlimitpos",
+                  "tendonlimitvel", "tendonlimitfrc"):
                 observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
                 observation_space["high"].append(0)
             case "camprojection":
