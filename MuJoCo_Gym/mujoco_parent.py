@@ -117,8 +117,8 @@ class MuJoCoParent:
             self.__init_render()
 
     def __init_environment(self):
-        """Initializes environment 
-        
+        """Initializes environment
+
         This function initializes the environment by setting up the MuJoCo model, data, camera, and visualization options.
         If the scene is not provided, it creates a new scene and context for rendering and agent cameras.
         If agent cameras are enabled, it also initializes the RGB sensor.
@@ -151,13 +151,15 @@ class MuJoCoParent:
         current = self.data.sensor(sensor["@name"])
         indices[current.id] = {"name": sensor["@name"], "data": current.data}
 
-        if key == "rangefinder":
+        if key in ("rangefinder" , "touch" , "accelerometer"):
             indices[current.id]["site"] = sensor["@site"]
-            indices[current.id]["type"] = "rangefinder"
+            indices[current.id]["type"] = key
             indices[current.id]["cutoff"] = sensor["@cutoff"]
         if key == "frameyaxis":
             indices[current.id]["site"] = sensor["@objname"]
             indices[current.id]["type"] = "frameyaxis"
+            indices[current.id]["site"] = sensor["@site"]
+            indices[current.id]["cutoff"] = sensor["@cutoff"]
 
     def __create_sensor_index_dict(self, sensor_dict):
         """
@@ -184,7 +186,7 @@ class MuJoCoParent:
 
     def get_observation_space_mujoco(self, agent: str) -> np.array:
         """Returns the observation space of the environment from all the mujoco sensors
-        
+
         Parameters:
             agent: Name of agent mujoco (top level)
 
@@ -209,7 +211,7 @@ class MuJoCoParent:
         observation_space = create_observation_space(agent_sensors)
 
         return observation_space
-    
+
     def get_action_space_mujoco(self, agent: str) -> np.array:
         """Returns the action space of the environment from all the mujoco actuators
 
@@ -280,7 +282,7 @@ class MuJoCoParent:
     def reset(self):
         """
         Resets the environment to its initial state.
-        
+
         Returns:
             sensor_data (numpy.ndarray): The sensor data after the reset.
         """
@@ -292,7 +294,7 @@ class MuJoCoParent:
             self.__init_environment()
             mj.mj_resetData(self.model, self.data)
             mj.mj_forward(self.model, self.data)
-            self.cam = mj.MjvCamera()  
+            self.cam = mj.MjvCamera()
         self.previous_time = self.data.time
         return self.get_sensor_data()
 
@@ -301,7 +303,7 @@ class MuJoCoParent:
         mj.mj_step(self.model, self.data)
         if self.render:
             self.__render()
-    
+
     def get_sensor_data(self, agent: str = None) -> np.array:
         """Returns the sensor data of a specific agent
 
@@ -355,30 +357,30 @@ class MuJoCoParent:
         Parameters:
             object_1 (str or array): Name or coordinates of object_1
             object_2 (str or array): Name or coordinates of object_2
-            
+
         Returns:
             distance (float): Distance between object_1 and object_2
         """
         def __name_to_coordinates(object):  # ToDo: what is object here and where does it come from?
-            if isinstance(object, str): 
+            if isinstance(object, str):
                 try:
                     object = self.data.body(object).xipos
                 except:
                     object = self.data.geom(object).xpos
             return object
-        
-        object_1 = __name_to_coordinates(object_1) 
+
+        object_1 = __name_to_coordinates(object_1)
         object_2 = __name_to_coordinates(object_2)
 
         return math.dist(object_1, object_2)
-    
+
     def collision(self, geom_1, geom_2) -> bool:
         """Checks if geom_1 and geom_2 are colliding
 
         Parameters:
             geom_1 (str or int): Name or id of geom_1
             geom_2 (str or int): Name or id of geom_2
-            
+
         Returns:
             collision (bool): True if geom_1 and geom_2 are colliding, False otherwise
         """
@@ -441,7 +443,7 @@ class MuJoCoParent:
 
     def __get_specific_camera(self, camera: str):
         """ Returns the image data for a specific camera
-        
+
         Parameters:
             camera (str): The name of the camera
         Returns:
@@ -502,7 +504,7 @@ class MuJoCoParent:
         """
         Initializes the visualization data structures and sets up the rendering environment.
         """
-        
+
         # initialize visualization data structures
         mj.mjv_defaultCamera(self.cam)
         mj.mjv_defaultOption(self.opt)
@@ -538,7 +540,7 @@ class MuJoCoParent:
         """
         action = mj.mjtMouse.mjMOUSE_ZOOM
         mj.mjv_moveCamera(self.model, action, 0.0, -0.05 * y_offset, self.scene, self.cam)
-        
+
     def __find_in_nested_dict(self, dictionary: dict, name: str = None, filter_key: str = "@name", parent=None) -> list:
         """Finds a key in a nested dictionary
 

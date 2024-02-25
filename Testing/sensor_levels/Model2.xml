@@ -36,6 +36,6 @@
     </body>
   </worldbody>
   <sensor>
-    <touch name="receiver_touch" site="receiver_sensor" cutoff="20" />
+    <accelerometer name="receiver_accelerometer" site="receiver_sensor" cutoff="5" />
   </sensor>
 </mujoco>

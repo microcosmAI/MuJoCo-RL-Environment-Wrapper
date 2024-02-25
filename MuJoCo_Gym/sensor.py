@@ -15,7 +15,7 @@ def process_sensor(sensor, index):
         "type": sensor["type"]
     }
 
-    if sensor_info["type"] == "rangefinder":
+    if sensor_info["type"] in ("rangefinder" , "touch" , "accelerometer", "gyro"):
         sensor_info["cutoff"] = sensor["cutoff"]
 
     return sensor_info, index + len(sensor["data"])
@@ -74,45 +74,41 @@ def create_observation_space(agent_sensors):
     observation_space = {"low": [], "high": []}
     # Creates the observation space from the sensors.
     for sensor_type in agent_sensors:
-        match sensor_type["type"]:
-            case "touch", "actuatorpos", "clock":
+        if sensor_type["type"] in ["touch", "actuatorpos", "clock"]:
+            observation_space["low"].append(0)
+            observation_space["high"].append(float(sensor_type["cutoff"]))
+        elif sensor_type["type"] in ["accelerometer", "velocimeter", "gyro", "force", "torque", "magnetometer", "framepos", "ballangvel", "framelinvel", "frameangvel", "framelinacc", "frameangacc"]:
+            for _ in range(3):
+                observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
+                observation_space["high"].append(float(sensor_type["cutoff"]))
+        elif sensor_type["type"] in ["rangefinder", "jointlimitpos", "jointlimitvel", "jointlimitfrc", "tendonlimitpos", "tendonlimitvel", "tendonlimitfrc"]:
+            observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
+            observation_space["high"].append(0)
+        elif sensor_type["type"] == "camprojection":
+            for _ in range(2):  # 2D projection
                 observation_space["low"].append(0)
                 observation_space["high"].append(float(sensor_type["cutoff"]))
-            case ("accelerometer", "velocimeter", "gyro", "force", "torque", "magnetometer", "framepos", "ballangvel",
-                  "framelinvel", "frameangvel", "framelinacc", "frameangacc"):
-                for _ in range(3):
-                    observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
-                    observation_space["high"].append(float(sensor_type["cutoff"]))
-            case ("rangefinder", "jointlimitpos", "jointlimitvel", "jointlimitfrc", "tendonlimitpos",
-                  "tendonlimitvel", "tendonlimitfrc"):
-                observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
-                observation_space["high"].append(0)
-            case "camprojection":
-                for _ in range(2):  # 2D projection
-                    observation_space["low"].append(0)
-                    observation_space["high"].append(float(sensor_type["cutoff"]))
-            case "ballquat", "framequat":
-                for _ in range(4):
-                    observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
-                    observation_space["high"].append(float(sensor_type["cutoff"]))
-            case "framexaxis", "frameyaxis", "framezaxis":
-                for _ in range(3):
-                    observation_space["low"].append(-1)
-                    observation_space["high"].append(1)
-            case ("subtreecom", "subtreelinvel", "subtreeangmom", "jointpos", "jointvel", "tendonpos", "tendonvel",
-                  "actuatorvel", "actuatorfrc", "jointactuatorfrc"):
+        elif sensor_type["type"] in ["ballquat", "framequat"]:
+            for _ in range(4):
                 observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
                 observation_space["high"].append(float(sensor_type["cutoff"]))
-            case "user":
+        elif sensor_type["type"] in ["framexaxis", "frameyaxis", "framezaxis"]:
+            for _ in range(3):
                 observation_space["low"].append(-1)
                 observation_space["high"].append(1)
-            case "plugin":
-                # Handle plugin sensor type
-                # The observation space for plugin sensors may vary widely, depending on the plugin
-                # need to determine the observation space based on the specific plugin and its functionality
-                # with arbitrary values:
-                observation_space["low"].append(0)
-                observation_space["high"].append(100)
+        elif sensor_type["type"] in ["subtreecom", "subtreelinvel", "subtreeangmom", "jointpos", "jointvel", "tendonpos", "tendonvel", "actuatorvel", "actuatorfrc", "jointactuatorfrc"]:
+            observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
+            observation_space["high"].append(float(sensor_type["cutoff"]))
+        elif sensor_type["type"] == "user":
+            observation_space["low"].append(-1)
+            observation_space["high"].append(1)
+        elif sensor_type["type"] == "plugin":
+            # Handle plugin sensor type
+            # The observation space for plugin sensors may vary widely, depending on the plugin
+            # need to determine the observation space based on the specific plugin and its functionality
+            # with arbitrary values:
+            observation_space["low"].append(0)
+            observation_space["high"].append(100)
 
     return observation_space
 
@@ -139,7 +135,7 @@ def process_user_sensor(sensor):
         "user": sensor["user"]
     }
     return sensor_info
-   
+
 
 
 def process_plugin_sensor(sensor):
