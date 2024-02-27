@@ -155,11 +155,9 @@ class MuJoCoParent:
             indices[current.id]["site"] = sensor["@site"]
             indices[current.id]["type"] = key
             indices[current.id]["cutoff"] = sensor["@cutoff"]
-        if key == "frameyaxis":
+        if key == "framexaxis":
             indices[current.id]["site"] = sensor["@objname"]
             indices[current.id]["type"] = "frameyaxis"
-            indices[current.id]["site"] = sensor["@site"]
-            indices[current.id]["cutoff"] = sensor["@cutoff"]
 
     def __create_sensor_index_dict(self, sensor_dict):
         """

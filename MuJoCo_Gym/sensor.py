@@ -15,7 +15,7 @@ def process_sensor(sensor, index):
         "type": sensor["type"]
     }
 
-    if sensor_info["type"] in ("rangefinder" , "touch" , "accelerometer", "gyro"):
+    if sensor_info["type"] in ("rangefinder" , "touch" , "accelerometer"):
         sensor_info["cutoff"] = sensor["cutoff"]
 
     return sensor_info, index + len(sensor["data"])
@@ -81,7 +81,10 @@ def create_observation_space(agent_sensors):
             for _ in range(3):
                 observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
                 observation_space["high"].append(float(sensor_type["cutoff"]))
-        elif sensor_type["type"] in ["rangefinder", "jointlimitpos", "jointlimitvel", "jointlimitfrc", "tendonlimitpos", "tendonlimitvel", "tendonlimitfrc"]:
+        elif sensor_type["type"] == "rangefinder":
+            observation_space["low"].append(-1)
+            observation_space["high"].append(float(sensor_type["cutoff"]))
+        elif sensor_type["type"] in ["jointlimitpos", "jointlimitvel", "jointlimitfrc", "tendonlimitpos", "tendonlimitvel", "tendonlimitfrc"]:
             observation_space["low"].append(-1 * float(sensor_type["cutoff"]))
             observation_space["high"].append(0)
         elif sensor_type["type"] == "camprojection":
