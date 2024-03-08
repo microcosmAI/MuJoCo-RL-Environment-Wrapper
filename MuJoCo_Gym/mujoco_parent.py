@@ -345,7 +345,8 @@ class MuJoCoParent:
                 "id": data_geom.id,
                 "name": data_geom.name,
                 "type": "geom",
-                "color": model_geom.rgba
+                "color": model_geom.rgba,
+                "shape": model_geom.type
             }
         return infos
 
