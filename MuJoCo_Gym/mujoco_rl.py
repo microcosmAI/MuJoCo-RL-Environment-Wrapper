@@ -334,6 +334,13 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
                     if tag in self.info_json["environment"]["objects"][object]["tags"]:
                         data = self.get_data(object)
                         filtered.append(data)
+        for area in self.info_json["areas"]:
+            for object in self.info_json["areas"][area]["objects"]:
+                if "tags" in self.info_json["areas"][area]["objects"][object].keys():
+                    if self.info_json["areas"][area]["objects"][object]["tags"] != None:
+                        if tag in self.info_json["areas"][area]["objects"][object]["tags"]:
+                            data = self.get_data(object)
+                            filtered.append(data)
         return filtered
 
     def get_data(self, name: str) -> np.array:
