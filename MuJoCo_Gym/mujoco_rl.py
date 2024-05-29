@@ -2,8 +2,9 @@ import json
 import copy
 import time
 import numpy as np
-from gymnasium.spaces import Box
-from ray.rllib.env import MultiAgentEnv
+from gymnasium.spaces import Box, Space
+# from ray.rllib.env import MultiAgentEnv
+from pettingzoo import ParallelEnv
 import os
 
 try:
@@ -14,7 +15,7 @@ except:
     from MuJoCo_Gym.helper import update_deep
 
 
-class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
+class MuJoCoRL(ParallelEnv, MuJoCoParent):
     """A class representing a MuJoCo Reinforcement Learning environment.
 
     Args:
@@ -45,9 +46,10 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         __create_observation_space(self) -> dict: Creates the observation space for the environment.
         step(self, action: dict) -> [dict, dict, dict, dict]: Applies the actions for each agent and returns the observations, rewards, terminations, truncations, and infos for each agent.
     """
-    
+
     def __init__(self, config_dict: dict):
         self.agents = config_dict.get("agents", [])
+        self.possible_agents = self.agents
         self.xml_paths = config_dict.get("xmlPath")
         self.info_jsons = config_dict.get("infoJson", None)
         self.render_mode = config_dict.get("renderMode", False)
@@ -68,22 +70,22 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
 
         self.data_store = {agent: {} for agent in self.agents}
 
-        MuJoCoParent.__init__(self, xml_paths=self.xml_paths, export_path=self.export_path, render=self.render_mode, #ToDo: why is this None?
-                              free_joint=self.free_joint, agent_cameras=self.agent_cameras, sensor_resolution=sensor_resolution)
-        MultiAgentEnv.__init__(self)
+        MuJoCoParent.__init__(self, xml_paths=self.xml_paths, export_path=self.export_path, render=self.render_mode,
+                              #ToDo: why is this None?
+                              free_joint=self.free_joint, agent_cameras=self.agent_cameras,
+                              sensor_resolution=sensor_resolution)
 
         self.__instantiateJson()
 
         self.environment_dynamics = [dynamic(self) for dynamic in self.environment_dynamics]
         self._observation_space = self.__create_observation_space()
-        self.observation_space = self._observation_space[list(self._observation_space.keys())[0]]
+        self.__observation_space = self._observation_space[list(self._observation_space.keys())[0]]
         self.__check_dynamics(self.environment_dynamics)
         self.__check_reward_functions(self.reward_functions)
         self.__check_done_functions(self.done_functions)
 
         self._action_space = self.__create_action_space()
-        self.action_space = self._action_space[list(self._action_space.keys())[0]]
-
+        self.__action_space = self._action_space[list(self._action_space.keys())[0]]
 
     def __instantiateJson(self):
         """If a json file or a list of json files is provided, it is loaded into the environment in this function.
@@ -100,11 +102,11 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         elif isinstance(self.info_jsons, str):
             json_file = open(self.info_jsons)
             self.info_json = json.load(json_file)
-            self.info_name_list = [key for key in self.info_json["environment"]["objects"].keys()] #ToDo: is this not a df? looks like a list or sth
+            self.info_name_list = [key for key in self.info_json["environment"][
+                "objects"].keys()]  #ToDo: is this not a df? looks like a list or sth
         else:
             self.info_json = None
             self.info_name_list = []
-        
 
     def __check_dynamics(self, environment_dynamics: list):
         """Check the output of the dynamic function in every Dynamic Class.
@@ -149,7 +151,7 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
             # check done
             if not isinstance(done, int):
                 raise Exception(f"Done, the first return variable of {doneFunction}, must be a boolean")
-    
+
     def __check_reward_functions(self, reward_functions: list):
         """Check the output of every reward function.
            I.e. whether reward is a float.
@@ -162,7 +164,6 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
             # check reward
             if not (isinstance(reward, float) or isinstance(reward, int)):
                 raise Exception(f"Reward, the second return variable of {reward_function}, must be a float")
-
 
     def __create_action_space(self) -> dict:
         """Creates the action space for the current environment
@@ -202,11 +203,13 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
             for dynamic in self.environment_dynamics:
                 observation_space[agent]["low"] += dynamic.observation_space["low"]
                 observation_space[agent]["high"] += dynamic.observation_space["high"]
-            new_observation_space[agent] = Box(low=np.array(observation_space[agent]["low"]), high=np.array(observation_space[agent]["high"]))
+            new_observation_space[agent] = Box(low=np.array(observation_space[agent]["low"]),
+                                               high=np.array(observation_space[agent]["high"]))
         return new_observation_space
-    
-    def __apply_dynamics(self, action: dict, observations: dict, rewards: dict, terminations: dict, infos: dict, data_store_copies: list):
-            """
+
+    def __apply_dynamics(self, action: dict, observations: dict, rewards: dict, terminations: dict, infos: dict,
+                         data_store_copies: list):
+        """
             Applies the dynamics of the environment to update the observations, rewards, terminations, and infos for each agent.
 
             Args:
@@ -220,17 +223,17 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
             Returns:
                 tuple: A tuple containing the updated observations, rewards, terminations, infos, and data store copies.
             """
-            for i, dynamic in enumerate(self.environment_dynamics):
-                # self.data_store = data_store_copies[i]
-                for agent in self.agents:
-                    dynamic_indizes = self.action_routing["dynamic"][dynamic.__class__.__name__]
-                    dynamic_actions = action[agent][dynamic_indizes[0]:dynamic_indizes[1]]
-                    reward, obs, done, info = dynamic.dynamic(agent, dynamic_actions)
-                    observations[agent] = np.concatenate((observations[agent], obs))
-                    rewards[agent] += reward
-                    terminations[agent] = any([terminations[agent], done])
-                    infos[agent][dynamic.__class__.__name__] = info
-            return observations, rewards, terminations, infos, data_store_copies
+        for i, dynamic in enumerate(self.environment_dynamics):
+            # self.data_store = data_store_copies[i]
+            for agent in self.agents:
+                dynamic_indizes = self.action_routing["dynamic"][dynamic.__class__.__name__]
+                dynamic_actions = action[agent][dynamic_indizes[0]:dynamic_indizes[1]]
+                reward, obs, done, info = dynamic.dynamic(agent, dynamic_actions)
+                observations[agent] = np.concatenate((observations[agent], obs))
+                rewards[agent] += reward
+                terminations[agent] = any([terminations[agent], done])
+                infos[agent][dynamic.__class__.__name__] = info
+        return observations, rewards, terminations, infos, data_store_copies
 
     def step(self, action: dict) -> [dict, dict, dict, dict, dict]:
         """Applies the actions for each agent and returns the observations, rewards, terminations, truncations,
@@ -257,7 +260,9 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         data_store_copies = [copy.deepcopy(self.data_store) for _ in range(len(self.environment_dynamics))]
         original_data_store = copy.deepcopy(self.data_store)
 
-        observations, rewards, terminations, infos, data_store_copies = self.__apply_dynamics(action, observations, rewards, terminations, infos, data_store_copies)
+        observations, rewards, terminations, infos, data_store_copies = self.__apply_dynamics(action, observations,
+                                                                                              rewards, terminations,
+                                                                                              infos, data_store_copies)
 
         # self.data_store = original_data_store
         # for data in data_store_copies:
@@ -302,14 +307,16 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
         self.data_store = {agent: {} for agent in self.agents}
 
         observations = {agent: self.get_sensor_data(agent) for agent in self.agents}
-        action = {agent: self.action_space.sample() for agent in self.agents}
+        action = {agent: self.__action_space.sample() for agent in self.agents}
         rewards = {agent: 0 for agent in self.agents}
         terminations = {agent: False for agent in self.agents}
         infos = {agent: {} for agent in self.agents}
         data_store_copies = [copy.deepcopy(self.data_store) for _ in range(len(self.environment_dynamics))]
         original_data_store = copy.deepcopy(self.data_store)
 
-        observations, rewards, terminations, infos, data_store_copies = self.__apply_dynamics(action, observations, rewards, terminations, infos, data_store_copies)
+        observations, rewards, terminations, infos, data_store_copies = self.__apply_dynamics(action, observations,
+                                                                                              rewards, terminations,
+                                                                                              infos, data_store_copies)
 
         self.data_store = original_data_store
         for data in data_store_copies:
@@ -317,7 +324,29 @@ class MuJoCoRL(MultiAgentEnv, MuJoCoParent):
 
         self.timestep = 0
         return observations, infos
-    
+
+    def action_space(self, agent: str) -> Space:
+        """Returns the action space for the specified agent
+
+        Parameters:
+            agent (AgentID): The ID of the agent
+
+        Returns:
+            action_space (gymnasium.spaces.Space): The action space for the agent
+        """
+        return self._action_space[agent]
+
+    def observation_space(self, agent: str) -> Space:
+        """Returns the observation space for the specified agent
+
+        Parameters:
+            agent (AgentID): The ID of the agent
+
+        Returns:
+            observation_space (gymnasium.spaces.Space): The observation space for the agent
+        """
+        return self._observation_space[agent]
+
     def filter_by_tag(self, tag: str) -> list:
         """Filter environment for object with specific tag
 
