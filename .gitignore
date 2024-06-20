@@ -130,7 +130,3 @@ dmypy.json
 **/.DS_Store
 results/
 *.jpg
-
-#idea
-
-.idea
