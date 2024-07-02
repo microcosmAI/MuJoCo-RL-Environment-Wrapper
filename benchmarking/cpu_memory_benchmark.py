@@ -30,25 +30,6 @@ def get_config(xml_file, agents=None):
             "agentCameras": True}
 
 
-'''def cpu_intensive_task():
-    var = [x ** 2 for x in range(10000000)]'''
-
-
-'''# Starte die Messung der CPU-Nutzung vor der Aufgabe
-start_cpu = process.cpu_percent(interval=None)  # Setze auf None, um die Messung zu starten
-
-# Führe die CPU-intensive Aufgabe aus
-cpu_intensive_task()
-
-# Warte eine Sekunde und messe dann die CPU-Nutzung
-time.sleep(1)
-cpu_usage = process.cpu_percent(interval=None)  # Hole die CPU-Nutzung seit dem letzten Aufruf
-
-print('CPU usage:', cpu_usage)'''
-
-
-# ---------------------------------Oben erstmal Test--------------------------------- #
-
 def get_system_usage(process=process):
     cpu = process.cpu_percent(interval=None)
     memory = process.memory_percent()
@@ -63,7 +44,7 @@ def benchmark_env(env, episodes=50, steps=1024):
         start_memory = process.memory_percent()
         env.reset()
         for _ in range(steps):
-            if(len(env.agents) == 1):
+            if len(env.agents) == 1:
                 env.step({"sender": env.action_space('sender').sample()})
             else:
                 env.step({"sender": env.action_space('sender').sample(), "receiver": env.action_space('receiver').sample()})
