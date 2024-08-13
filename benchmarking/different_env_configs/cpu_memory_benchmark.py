@@ -52,22 +52,23 @@ def benchmark_env(env, episodes=50, steps=1024):
         time.sleep(1)
         cpu, memory = get_system_usage()
         cpu_usage.append(cpu)
+        #TODO: Memory usage is not accurate - can be negative
         memory_usage.append(memory - start_memory)
         if i % 10 == 0:
             print(f"Episode {i} done, CPU: {cpu}%, Memory: {memory}%")
     return cpu_usage, memory_usage
 
 
-envi = MuJoCoRL(config_dict=get_config('levels/MultiAgentModel3Sensors.xml', ['sender', 'receiver']))
+envi = MuJoCoRL(config_dict=get_config('../levels/MultiAgentModel3Sensors.xml', ['sender', 'receiver']))
 cpu_multi3, memory_multi3 = benchmark_env(envi)
 
-envi = MuJoCoRL(config_dict=get_config('levels/SingleAgentModel.xml', ['sender']))
+envi = MuJoCoRL(config_dict=get_config('../levels/SingleAgentModel.xml', ['sender']))
 cpu_single, memory_single = benchmark_env(envi)
 
-envi = MuJoCoRL(config_dict=get_config('levels/MultiAgentModel2Sensors.xml', ['sender', 'receiver']))
+envi = MuJoCoRL(config_dict=get_config('../levels/MultiAgentModel2Sensors.xml', ['sender', 'receiver']))
 cpu_multi2, memory_multi2 = benchmark_env(envi)
 
-envi = MuJoCoRL(config_dict=get_config('levels/MultiAgentModel.xml', ['sender', 'receiver']))
+envi = MuJoCoRL(config_dict=get_config('../levels/MultiAgentModel.xml', ['sender', 'receiver']))
 cpu_multi, memory_multi = benchmark_env(envi)
 
 plt.plot(cpu_multi, label='Multi Agent')

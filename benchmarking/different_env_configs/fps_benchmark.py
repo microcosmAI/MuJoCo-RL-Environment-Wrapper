@@ -24,7 +24,7 @@ def get_config(xml_file, agents=None):
 
 
 # Multi Agent Environment Testing
-env = MuJoCoRL(config_dict=get_config('levels/MultiAgentModel.xml', ['sender', 'receiver']))
+env = MuJoCoRL(config_dict=get_config('../levels/MultiAgentModel.xml', ['sender', 'receiver']))
 
 # List to store the FPS
 frames_per_second_multi = []
@@ -43,7 +43,7 @@ for i in range(51):
         print("Episode {} done".format(i), "FPS: {}".format(frames_per_second_multi[-1]))
 
 # Single Agent Environment Testing
-env = MuJoCoRL(config_dict=get_config('levels/SingleAgentModel.xml', ['sender']))
+env = MuJoCoRL(config_dict=get_config('../levels/SingleAgentModel.xml', ['sender']))
 
 # List to store the FPS
 frames_per_second = []
@@ -62,7 +62,7 @@ for i in range(51):
         print("Episode {} done".format(i), "FPS: {}".format(frames_per_second[-1]))
 
 # Multi Agent Environment with two Sensors per agent - Testing
-env = MuJoCoRL(config_dict=get_config('levels/MultiAgentModel2Sensors.xml', ['sender', 'receiver']))
+env = MuJoCoRL(config_dict=get_config('../levels/MultiAgentModel2Sensors.xml', ['sender', 'receiver']))
 
 # List to store the FPS
 frames_per_second_multi_2 = []
@@ -81,7 +81,7 @@ for i in range(51):
         print("Episode {} done".format(i), "FPS: {}".format(frames_per_second_multi_2[-1]))
 
 # Multi Agent Environment with three Sensors per agent - Testing
-env = MuJoCoRL(config_dict=get_config('levels/MultiAgentModel3Sensors.xml', ['sender', 'receiver']))
+env = MuJoCoRL(config_dict=get_config('../levels/MultiAgentModel3Sensors.xml', ['sender', 'receiver']))
 
 # List to store the FPS
 frames_per_second_multi_3 = []
