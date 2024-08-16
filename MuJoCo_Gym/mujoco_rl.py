@@ -78,13 +78,16 @@ class MuJoCoRL(ParallelEnv, MuJoCoParent):
         self.__instantiateJson()
 
         self.environment_dynamics = [dynamic(self) for dynamic in self.environment_dynamics]
-        self._observation_space = self.__create_observation_space()
-        self.__observation_space = self._observation_space[list(self._observation_space.keys())[0]]
         self.__check_dynamics(self.environment_dynamics)
         self.__check_reward_functions(self.reward_functions)
         self.__check_done_functions(self.done_functions)
 
+        self._observation_space = self.__create_observation_space()
+        # ToDo: why is this a list?
+        self.__observation_space = self._observation_space[list(self._observation_space.keys())[0]]
+
         self._action_space = self.__create_action_space()
+        # ToDo: why is this a list?
         self.__action_space = self._action_space[list(self._action_space.keys())[0]]
 
     def __instantiateJson(self):
@@ -198,7 +201,9 @@ class MuJoCoRL(ParallelEnv, MuJoCoParent):
         observation_space = {}
         new_observation_space = {}
         for agent in self.agents:
+            # print(agent)
             observation_space[agent] = MuJoCoRL.get_observation_space_mujoco(self, agent)
+            # print(observation_space[agent]["low"], observation_space[agent]["high"])
             # Get the action space for the environment dynamics
             for dynamic in self.environment_dynamics:
                 observation_space[agent]["low"] += dynamic.observation_space["low"]
