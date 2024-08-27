@@ -50,7 +50,7 @@ def get_config(xml_file, agents=None):
         "doneFunctions": [],
         "skipFrames": 5,
         "environmentDynamics": [],
-        "freeJoint": True,
+        "freeJoint": False,
         "renderMode": False,
         "maxSteps": 1024,
         "agentCameras": True
@@ -58,7 +58,7 @@ def get_config(xml_file, agents=None):
 
 
 # Initialize the environment with the custom reward function
-env = MuJoCoRL(config_dict=get_config('../levels/Ant.xml', ['torso']))
+env = MuJoCoRL(config_dict=get_config('/Users/cowolff/Documents/GitHub/s.mujoco_environment/benchmarking/levels/Ant.xml', ['torso']))
 
 # Print environment details
 print("Environment details:")
@@ -75,6 +75,10 @@ for episode in range(num_episodes):
     for step in range(num_steps):
         action = env.action_space('torso').sample()  # Replace with a learned policy for actual training
         observations, rewards, terminations, truncations, infos = env.step({"torso": action})
+
+        # print observation shape
+        print(observations["torso"])
+        exit()
         total_reward += rewards['torso']
         if terminations['torso']:
             break

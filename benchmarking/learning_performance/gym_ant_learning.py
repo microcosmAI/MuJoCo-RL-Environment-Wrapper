@@ -10,6 +10,8 @@ print("Environment details:")
 print(f"Action space: {gym_env.action_space}")
 print(f"Observation space: {gym_env.observation_space}")
 
+exit()
+
 # Create the PPO model
 gym_model = PPO('MlpPolicy', gym_env, verbose=1)
 

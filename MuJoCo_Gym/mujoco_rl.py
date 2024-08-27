@@ -258,7 +258,7 @@ class MuJoCoRL(ParallelEnv, MuJoCoParent):
                           for key in action.keys()}
         self.apply_action(mujoco_actions, skip_frames=self.skip_frames)
 
-        observations = {agent: self.get_sensor_data(agent) for agent in self.agents}
+        observations = {agent: self.get_observations(agent) for agent in self.agents}
         rewards = {agent: 0 for agent in self.agents}
         terminations = {agent: False for agent in self.agents}
         infos = {agent: {} for agent in self.agents}
