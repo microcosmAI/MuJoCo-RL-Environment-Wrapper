@@ -199,7 +199,6 @@ class MuJoCoParent:
         for joint_dict in joint_dicts:
             # Extract the joint name
             joint_name = joint_dict.get('@name')
-            print(f"joint_name: {joint_name}")
             if joint_name:
                 # Find the joint ID using the name
                 joint_id = self.model.joint(joint_name).id

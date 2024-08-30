@@ -311,7 +311,7 @@ class MuJoCoRL(ParallelEnv, MuJoCoParent):
 
         self.data_store = {agent: {} for agent in self.agents}
 
-        observations = {agent: self.get_sensor_data(agent) for agent in self.agents}
+        observations = {agent: self.get_observations(agent) for agent in self.agents}
         action = {agent: self.__action_space.sample() for agent in self.agents}
         rewards = {agent: 0 for agent in self.agents}
         terminations = {agent: False for agent in self.agents}
