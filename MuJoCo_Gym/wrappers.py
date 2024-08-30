@@ -54,7 +54,7 @@ class GymnasiumWrapper(gymnasium.Env):
         """
         action = {self.agent: action}
         observations, rewards, terminations, truncations, infos = self.environment.step(action)
-        termination = terminations["__all__"]
+        termination = terminations[self.agent]
         truncation = truncations["__all__"]
         
         return observations[self.agent], rewards[self.agent], termination, truncation, infos[self.agent]
