@@ -10,12 +10,57 @@ import time
 
 try:
     from helper import mat2euler_scipy
+    from sensor import process_sensors, create_sensor_observation_space
 except:
     from MuJoCo_Gym.helper import mat2euler_scipy
+    from MuJoCo_Gym.sensor import process_sensors, create_sensor_observation_space
 
 
 class MuJoCoParent:
-    """ToDo: describe class function
+    """
+    The MuJoCoParent class represents a parent class for MuJoCo environments.
+
+    Attributes:
+        xml_paths (str or list): Path(s) to xml-file(s) containing finished world environment
+        export_path (str): Path to output directory
+        render (bool): Boolean for rendering option (set to "True" for rendering)
+        free_joint (bool): Boolean for free-joints option (set to "True" for unrestricted movement)
+        agent_cameras (bool): Boolean for cameras option (set to "True" for enabling cameras)
+        sensor_resolution (tuple): Resolution of the sensors (default is (64, 64))
+
+    Methods:
+        __init__(self, xml_paths, export_path, render, free_joint, agent_cameras, sensor_resolution):
+            Initializes the MuJoCoParent class.
+
+        __init_environment(self):
+            Initializes the environment by setting up the MuJoCo model, data, camera, and visualization options.
+
+        __process_sensor(self, sensor, indices, key):
+            Process a sensor and update the indices dictionary.
+
+        __create_sensor_index_dict(self, sensor_dict):
+            Stores all the sensors and their indices in the mujoco data object in a dictionary.
+
+        get_observation_space_mujoco(self, agent):
+            Returns the observation space of the environment from all the mujoco sensors.
+
+        get_action_space_mujoco(self, agent):
+            Returns the action space of the environment from all the mujoco actuators.
+
+        apply_action(self, actions, skip_frames):
+            Applies the actions to the environment.
+
+        reset(self):
+            Resets the environment to its initial state.
+
+        mujoco_step(self):
+            Performs a mujoco step.
+
+        get_sensor_data(self, agent):
+            Returns the sensor data of a specific agent.
+
+        get_data(self, name):
+            Returns the data of a specific agent.
     """
 
     def __init__(self, xml_paths, export_path: str = None, render: bool = False, free_joint: bool = False,
@@ -73,6 +118,10 @@ class MuJoCoParent:
 
     def __init_environment(self):
         """Initializes environment
+
+        This function initializes the environment by setting up the MuJoCo model, data, camera, and visualization options.
+        If the scene is not provided, it creates a new scene and context for rendering and agent cameras.
+        If agent cameras are enabled, it also initializes the RGB sensor.
         """
         self.model = mj.MjModel.from_xml_path(self.xml_path)  # MuJoCo model
         self.data = mj.MjData(self.model)                # MuJoCo data
@@ -87,82 +136,141 @@ class MuJoCoParent:
         if self.agent_cameras:
             self.__init_rgb_sensor()
 
+    def __process_sensor(self, sensor, indices, key):
+        """
+        Process a sensor and update the indices dictionary.
+
+        Args:
+            sensor (dict): The sensor dictionary containing sensor information.
+            indices (dict): The dictionary to store the sensor indices.
+            key (str): The key indicating the type of sensor.
+
+        Returns:
+            None
+        """
+        current = self.data.sensor(sensor["@name"])
+        indices[current.id] = {"name": sensor["@name"], "data": current.data}
+
+        if key in ("rangefinder" , "touch" , "accelerometer"):
+            indices[current.id]["site"] = sensor["@site"]
+            indices[current.id]["type"] = key
+            indices[current.id]["cutoff"] = sensor["@cutoff"]
+        if key == "framexaxis":
+            indices[current.id]["site"] = sensor["@objname"]
+            indices[current.id]["type"] = "frameyaxis"
+
+    def __create_sensor_index_dict(self, sensor_dict):
+        """
+        Stores all the sensors and their indices in the mujoco data object in a dictionary.
+
+        Parameters:
+        - sensor_dict (list): A list containing sensor information.
+        - indices (dict): Dictionary to store sensor indices.
+
+        Returns:
+        None
+        """
+        indices = {}
+        for sensor_type in sensor_dict:
+            if sensor_type is not None:
+                for key in sensor_type.keys():
+                    if isinstance(sensor_type[key], list):
+                        for sensor in sensor_type[key]:
+                            self.__process_sensor(sensor, indices, key)
+                    elif isinstance(sensor_type[key], dict):
+                        sensor = sensor_type[key]
+                        self.__process_sensor(sensor, indices, key)
+        return indices
+    
+    def retrieve_mujoco_all_indices(self, joint_dicts):
+        """
+        Given a MuJoCo model and a list of dictionaries representing joint information,
+        retrieve all qpos and qvel indices for each joint name using the model's jnt_qposadr and jnt_dofadr.
+
+        :param model: MuJoCo model object containing joint information.
+        :param joint_dicts: List of dictionaries containing joint information.
+        :return: Two lists, one with all qpos indices and one with all qvel indices.
+        """
+        # Lists to store all qpos and qvel indices
+        qpos_indices = []
+        qvel_indices = []
+
+        # Iterate over each dictionary in the list
+        for joint_dict in joint_dicts:
+            # Extract the joint name
+            joint_name = joint_dict.get('@name')
+            if joint_name:
+                # Find the joint ID using the name
+                joint_id = self.model.joint(joint_name).id
+
+                # Retrieve the start index for qpos and qvel
+                qpos_start_index = self.model.jnt_qposadr[joint_id]
+                qvel_start_index = self.model.jnt_dofadr[joint_id]
+
+                # Number of position DOFs for this joint (typically 1 for hinge, but can be more for free joints)
+                # If current joint is a free joint
+                if self.model.jnt_type[joint_id] == mj.mjtJoint.mjJNT_FREE:
+                    # Number of position DOFs for this joint = 7
+                    qpos_dof = 7
+                else:
+                    # Number of position DOFs for this joint = 1
+                    qpos_dof = 1
+                
+                if self.model.jnt_type[joint_id] == mj.mjtJoint.mjJNT_FREE:
+                    # Number of velocity DOFs for this joint = 6
+                    qvel_dof = 6
+                else:
+                    # Number of velocity DOFs for this joint = 1
+                    qvel_dof = 1
+
+                # Append all qpos indices for this joint
+                qpos_indices.extend(range(qpos_start_index, qpos_start_index + qpos_dof))
+                # Append all qvel indices for this joint
+                qvel_indices.extend(range(qvel_start_index, qvel_start_index + qvel_dof))
+
+        return qpos_indices, qvel_indices
+
     def get_observation_space_mujoco(self, agent: str) -> np.array:
         """Returns the observation space of the environment from all the mujoco sensors
-        
+
         Parameters:
             agent: Name of agent mujoco (top level)
 
         Returns:
             observation_space (np.array): The observation space of the environment
         """
-        observation_space = {"low": [], "high": []}
         agent_dict = self.__find_in_nested_dict(self.xml_dict, name=agent, filter_key="@name")
         agent_sites = self.__find_in_nested_dict(agent_dict, parent="site")
         sensor_dict = self.__find_in_nested_dict(self.xml_dict, parent="sensor")
 
+        world_dict = self.__find_in_nested_dict(self.xml_dict, parent="worldbody")
+        joint_dict = self.__find_in_nested_dict(world_dict, parent="joint")
+        agent_joints = self.__find_in_nested_dict(agent_dict, parent="joint")
+
         if self.agent_cameras:
             self.__find_agent_camera(agent_dict, agent)
 
-        indices = {}
-        new_indices = {}
-        index = 0
-
         # Stores all the sensors and their indices in the mujoco data object in a dictionary.
-        for sensor_type in sensor_dict:
-            if sensor_type is not None:
-                for key in sensor_type.keys():
-                    if isinstance(sensor_type[key], list):
-                        for sensor in sensor_type[key]:
-                            current = self.data.sensor(sensor["@name"])
-                            indices[current.id] = {"name": sensor["@name"], "data": current.data}
-                            if "@site" in sensor.keys():
-                                indices[current.id]["site"] = sensor["@site"]
-                                indices[current.id]["type"] = "rangefinder"
-                                indices[current.id]["cutoff"] = sensor["@cutoff"]
-                            if "@objtype" in sensor.keys():
-                                indices[current.id]["site"] = sensor["@objname"]
-                                indices[current.id]["type"] = "frameyaxis"
-                    elif isinstance(sensor_type[key], dict):
-                        sensor = sensor_type[key]
-                        current = self.data.sensor(sensor["@name"])
-                        indices[current.id] = {"name": sensor["@name"], "data": current.data}
-                        if "@site" in sensor.keys():
-                            indices[current.id]["site"] = sensor["@site"]
-                            indices[current.id]["type"] = "rangefinder"
-                            indices[current.id]["cutoff"] = sensor["@cutoff"]
-                        if "@objtype" in sensor.keys():
-                            indices[current.id]["site"] = sensor["@objname"]
-                            indices[current.id]["type"] = "frameyaxis"
+        indices = self.__create_sensor_index_dict(sensor_dict)
 
-        # Filters for the sensors that are on the agent and sorts them by number.
-        for item in sorted(indices.items()):
-            new_indices[item[1]["name"]] = {"indices": [], "site": item[1]["site"], "type": item[1]["type"]}
-            if item[1]["type"] == "rangefinder":
-                new_indices[item[1]["name"]]["cutoff"] = item[1]["cutoff"]
-            for i in range(len(item[1]["data"])):
-                new_indices[item[1]["name"]]["indices"].append(index)
-                index += 1
+        # Retrieve all qpos and qvel indices for each joint name using the model's jnt_qposadr and jnt_dofadr.
+        qpos_indices, qvel_indices = self.retrieve_mujoco_all_indices(joint_dicts=joint_dict)
 
-        # Stores the indices of the sensors that are on the agent.
-        agent_sensors = [current for current in new_indices.values() if current["site"] in [site["@name"]
-                                                                                            for site in agent_sites]]
-        agent_indices = [current["indices"] for current in agent_sensors]         # ToDo: which one is correct?
-        agent_indices = [item for sublist in agent_indices for item in sublist]   # ToDo: which one is correct?
-        self.agents_observation_index[agent] = agent_indices
+        # Extracts the indices of the sensors that are attached to the agent.
+        agent_indices, agent_sensors = process_sensors(indices, agent_sites)
+        self.agents_observation_index[agent] = {"sensors": agent_indices, "qpos": qpos_indices, "qvel": qvel_indices}
 
-        # Creates the observation space from the sensors.
-        for sensor_type in agent_sensors:
-            if sensor_type["type"] == "rangefinder":
-                observation_space["low"].append(-1)
-                observation_space["high"].append(float(sensor_type["cutoff"]))
-            elif sensor_type["type"] == "frameyaxis":
-                for _ in range(3):
-                    observation_space["low"].append(-360)
-                    observation_space["high"].append(360)
+        # Creates the observation space from the sensors and its corresponding indizes.
+        observation_space = create_sensor_observation_space(agent_sensors)
+
+        observation_space["low"] += [-np.inf for i in qpos_indices]
+        observation_space["high"] += [np.inf for i in qpos_indices]
+
+        observation_space["low"] += [-np.inf for i in qvel_indices]
+        observation_space["high"] += [np.inf for i in qvel_indices]
 
         return observation_space
-    
+
     def get_action_space_mujoco(self, agent: str) -> np.array:
         """Returns the action space of the environment from all the mujoco actuators
 
@@ -173,7 +281,7 @@ class MuJoCoParent:
             action_space (np.array): The action space of the environment
         """
         action_space = {"low": [], "high": []}
-        action_indexs = []      # ToDo: is the "s" a mistake?
+        action_indexs = []
         agent_dict = self.__find_in_nested_dict(self.xml_dict, name=agent, filter_key="@name")
         agent_joints = self.__find_in_nested_dict(agent_dict, parent="joint")
         if self.free_joint:
@@ -230,11 +338,12 @@ class MuJoCoParent:
             self.previous_time = self.data.time
             self.__render()
 
-    def reset(self) -> "ToDo":
-        """Resets the environment and returns sensor data
+    def reset(self):
+        """
+        Resets the environment to its initial state.
 
         Returns:
-            ToDo
+            sensor_data (numpy.ndarray): The sensor data after the reset.
         """
         if isinstance(self.xml_paths, str):
             mj.mj_resetData(self.model, self.data)
@@ -244,7 +353,7 @@ class MuJoCoParent:
             self.__init_environment()
             mj.mj_resetData(self.model, self.data)
             mj.mj_forward(self.model, self.data)
-            self.cam = mj.MjvCamera()  
+            self.cam = mj.MjvCamera()
         self.previous_time = self.data.time
         return self.get_sensor_data()
 
@@ -253,7 +362,7 @@ class MuJoCoParent:
         mj.mj_step(self.model, self.data)
         if self.render:
             self.__render()
-    
+
     def get_sensor_data(self, agent: str = None) -> np.array:
         """Returns the sensor data of a specific agent
 
@@ -263,10 +372,24 @@ class MuJoCoParent:
             np.array: The sensor data of the agent.
         """
         if agent is not None:
-            sensor_data = [self.data.sensordata[i] for i in self.agents_observation_index[agent]]
+            sensor_data = [self.data.sensordata[i] for i in self.agents_observation_index[agent]["sensors"]]
             return sensor_data
         else:
             return self.data.sensordata
+        
+    def get_observations(self, agent: str) -> np.array:
+        """Returns the observation of a specific agent
+
+        Parameters:
+            agent (str): The name of the agent.
+
+        Returns:
+            np.array: The observation of the agent.
+        """
+        sensor_data = self.get_sensor_data(agent)
+        qpos = [self.data.qpos[i] for i in self.agents_observation_index[agent]["qpos"]]
+        qvel = [self.data.qvel[i] for i in self.agents_observation_index[agent]["qvel"]]
+        return np.array(sensor_data + qpos + qvel)
 
     def get_data(self, name: str) -> dict:
         """Returns the data of a specific object/geom
@@ -297,7 +420,8 @@ class MuJoCoParent:
                 "id": data_geom.id,
                 "name": data_geom.name,
                 "type": "geom",
-                "color": model_geom.rgba
+                "color": model_geom.rgba,
+                "shape": model_geom.type
             }
         return infos
 
@@ -307,30 +431,30 @@ class MuJoCoParent:
         Parameters:
             object_1 (str or array): Name or coordinates of object_1
             object_2 (str or array): Name or coordinates of object_2
-            
+
         Returns:
             distance (float): Distance between object_1 and object_2
         """
         def __name_to_coordinates(object):  # ToDo: what is object here and where does it come from?
-            if isinstance(object, str): 
+            if isinstance(object, str):
                 try:
                     object = self.data.body(object).xipos
                 except:
                     object = self.data.geom(object).xpos
             return object
-        
-        object_1 = __name_to_coordinates(object_1) 
+
+        object_1 = __name_to_coordinates(object_1)
         object_2 = __name_to_coordinates(object_2)
 
         return math.dist(object_1, object_2)
-    
+
     def collision(self, geom_1, geom_2) -> bool:
         """Checks if geom_1 and geom_2 are colliding
 
         Parameters:
             geom_1 (str or int): Name or id of geom_1
             geom_2 (str or int): Name or id of geom_2
-            
+
         Returns:
             collision (bool): True if geom_1 and geom_2 are colliding, False otherwise
         """
@@ -393,7 +517,7 @@ class MuJoCoParent:
 
     def __get_specific_camera(self, camera: str):
         """ Returns the image data for a specific camera
-        
+
         Parameters:
             camera (str): The name of the camera
         Returns:
@@ -451,7 +575,10 @@ class MuJoCoParent:
         return color_image
 
     def __init_render(self):
-        """Starts the render window """
+        """
+        Initializes the visualization data structures and sets up the rendering environment.
+        """
+
         # initialize visualization data structures
         mj.mjv_defaultCamera(self.cam)
         mj.mjv_defaultOption(self.opt)
@@ -477,14 +604,17 @@ class MuJoCoParent:
         glfw.poll_events()
 
     def __scroll(self, window, x_offset, y_offset):
-        """Makes the camera zoom in and out when rendered
+        """
+        Scroll the camera in the MuJoCo environment.
 
         Parameters:
-            y_offset (float): y offset
+            window: The window object.
+            x_offset: The horizontal offset of the scroll.
+            y_offset: The vertical offset of the scroll.
         """
         action = mj.mjtMouse.mjMOUSE_ZOOM
         mj.mjv_moveCamera(self.model, action, 0.0, -0.05 * y_offset, self.scene, self.cam)
-        
+
     def __find_in_nested_dict(self, dictionary: dict, name: str = None, filter_key: str = "@name", parent=None) -> list:
         """Finds a key in a nested dictionary
 
@@ -515,7 +645,7 @@ class MuJoCoParent:
             for item in dictionary:
                 if isinstance(item, (dict, list)):
                     results.extend(self.__find_in_nested_dict(item, name, filter_key=filter_key, parent=parent))
-        return results  # ToDo: here results was said to be dict, but it seems like its list(dict)
+        return results
 
     def __controller(self, model, data):
         # ToDo: is this intended?

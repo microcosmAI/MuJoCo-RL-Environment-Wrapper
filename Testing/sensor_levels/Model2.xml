@@ -1,0 +1,41 @@
+<mujoco>
+  <worldbody>
+    <light diffuse=".5 .5 .5" pos="0 0 3" dir="0 0 -1" />
+    <body pos="0 0 0" name="">
+      <geom type="plane" size="10 5 1.110223E-16" euler="0 0 0" rgba="255 255 255 1" name="" />
+    </body>
+    <body pos="0.01862761 -4.816084 0.5215917" name="">
+      <geom type="box" size="10 0.25 0.5" euler="0 0 0" rgba="0 .9 0 1" name="border1_geom" />
+    </body>
+    <body pos="-0.02937651 4.738263 0.4082346" name="">
+      <geom type="box" size="10 0.25 0.5" euler="0 0 0" rgba="0 .9 0 1" name="border2_geom" />
+    </body>
+    <body pos="9.789262 -0.04495001 0.4216571" name="">
+      <geom type="box" size="0.25 5 0.5" euler="0 0 0" rgba="0 .9 0 1" name="border3_geom" />
+    </body>
+    <body pos="-9.848948 -0.07438982 0.4721622" name="">
+      <geom type="box" size="0.25 5 0.5" euler="0 0 0" rgba="0 .9 0 1" name="border4_geom" />
+    </body>
+    <body pos="-0.7310539 -0.09776664 0.4394875" name="">
+      <geom type="box" size="0.25 5 0.5" euler="0 0 0" rgba="0 .9 0 1" name="border5_geom" />
+    </body>
+    <body pos="7.02852 -2.071592 0.4710507" name="choice_1">
+      <geom type="box" size="1 1 0.5" euler="0 0 0" rgba="0 0 255 1" name="choice_1_geom" />
+    </body>
+    <body pos="1.373154 -2.135309 0.3841939" name="choice_2">
+      <geom type="box" size="1 1 0.5" euler="0 0 0" rgba="255 0 0 1" name="choice_2_geom" />
+    </body>
+    <body pos="-5.522553 -2.403258 0.4737153" name="reference">
+      <geom type="box" size="0.5 0.5 0.5" euler="0 0 0" rgba="0 0 255 1" name="reference_geom" />
+    </body>
+    <body pos="4.595446 1.222577 0.4743838" euler="180 0 0" name="receiver">
+      <geom type="box" size="0.5 0.5 0.5" euler="0 0 0" rgba="255 255 0 1" name="receiver_geom" />
+      <joint type="free" name="receiver_freeJoint" />
+      <camera name="receiver_camera" pos="0 -0.6 0" euler="90 0 0"/>
+      <site name="receiver_sensor" pos="1 0 0" size="0.01"/>
+    </body>
+  </worldbody>
+  <sensor>
+    <accelerometer name="receiver_accelerometer" site="receiver_sensor" cutoff="5" />
+  </sensor>
+</mujoco>
