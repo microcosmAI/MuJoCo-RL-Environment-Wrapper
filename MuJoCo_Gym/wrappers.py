@@ -19,7 +19,7 @@ class GymnasiumWrapper(gymnasium.Env):
         render_mode (str, optional): The rendering mode for the environment. Defaults to "none".
 
     Attributes:
-        metadata (dict): Metadata for the environment, including render modes and render fps.
+        metadata (dict): Metadata for the environment, including render modes and render fps_gym.
         observation_space (gym.Space): The observation space of the environment.
         action_space (gym.Space): The action space of the environment.
 
@@ -35,8 +35,8 @@ class GymnasiumWrapper(gymnasium.Env):
         if len(self.environment.agents) > 1:
             raise Exception("Environment has too many agents. Only one agent is allowed in a gym environment.")
 
-        self.observation_space = Box(high=environment.observation_space.high, low=environment.observation_space.low)
-        self.action_space = Box(high=environment.action_space.high, low=environment.action_space.low)
+        self.observation_space = environment.observation_space(agent)
+        self.action_space = environment.action_space(agent)
 
     def step(self, action):
         """
@@ -54,7 +54,7 @@ class GymnasiumWrapper(gymnasium.Env):
         """
         action = {self.agent: action}
         observations, rewards, terminations, truncations, infos = self.environment.step(action)
-        termination = terminations["__all__"]
+        termination = terminations[self.agent]
         truncation = truncations["__all__"]
         
         return observations[self.agent], rewards[self.agent], termination, truncation, infos[self.agent]

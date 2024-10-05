@@ -61,7 +61,7 @@ def process_sensors(indices, agent_sites):
     return agent_indices, agent_sensors
 
 
-def create_observation_space(agent_sensors):
+def create_sensor_observation_space(agent_sensors):
     """
     Creates the observation space based on the given agent sensors.
 

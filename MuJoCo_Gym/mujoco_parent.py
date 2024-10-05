@@ -10,10 +10,10 @@ import time
 
 try:
     from helper import mat2euler_scipy
-    from sensor import process_sensors, create_observation_space
+    from sensor import process_sensors, create_sensor_observation_space
 except:
     from MuJoCo_Gym.helper import mat2euler_scipy
-    from MuJoCo_Gym.sensor import process_sensors, create_observation_space
+    from MuJoCo_Gym.sensor import process_sensors, create_sensor_observation_space
 
 
 class MuJoCoParent:
@@ -181,6 +181,54 @@ class MuJoCoParent:
                         sensor = sensor_type[key]
                         self.__process_sensor(sensor, indices, key)
         return indices
+    
+    def retrieve_mujoco_all_indices(self, joint_dicts):
+        """
+        Given a MuJoCo model and a list of dictionaries representing joint information,
+        retrieve all qpos and qvel indices for each joint name using the model's jnt_qposadr and jnt_dofadr.
+
+        :param model: MuJoCo model object containing joint information.
+        :param joint_dicts: List of dictionaries containing joint information.
+        :return: Two lists, one with all qpos indices and one with all qvel indices.
+        """
+        # Lists to store all qpos and qvel indices
+        qpos_indices = []
+        qvel_indices = []
+
+        # Iterate over each dictionary in the list
+        for joint_dict in joint_dicts:
+            # Extract the joint name
+            joint_name = joint_dict.get('@name')
+            if joint_name:
+                # Find the joint ID using the name
+                joint_id = self.model.joint(joint_name).id
+
+                # Retrieve the start index for qpos and qvel
+                qpos_start_index = self.model.jnt_qposadr[joint_id]
+                qvel_start_index = self.model.jnt_dofadr[joint_id]
+
+                # Number of position DOFs for this joint (typically 1 for hinge, but can be more for free joints)
+                # If current joint is a free joint
+                if self.model.jnt_type[joint_id] == mj.mjtJoint.mjJNT_FREE:
+                    # Number of position DOFs for this joint = 7
+                    qpos_dof = 7
+                else:
+                    # Number of position DOFs for this joint = 1
+                    qpos_dof = 1
+                
+                if self.model.jnt_type[joint_id] == mj.mjtJoint.mjJNT_FREE:
+                    # Number of velocity DOFs for this joint = 6
+                    qvel_dof = 6
+                else:
+                    # Number of velocity DOFs for this joint = 1
+                    qvel_dof = 1
+
+                # Append all qpos indices for this joint
+                qpos_indices.extend(range(qpos_start_index, qpos_start_index + qpos_dof))
+                # Append all qvel indices for this joint
+                qvel_indices.extend(range(qvel_start_index, qvel_start_index + qvel_dof))
+
+        return qpos_indices, qvel_indices
 
     def get_observation_space_mujoco(self, agent: str) -> np.array:
         """Returns the observation space of the environment from all the mujoco sensors
@@ -195,18 +243,31 @@ class MuJoCoParent:
         agent_sites = self.__find_in_nested_dict(agent_dict, parent="site")
         sensor_dict = self.__find_in_nested_dict(self.xml_dict, parent="sensor")
 
+        world_dict = self.__find_in_nested_dict(self.xml_dict, parent="worldbody")
+        joint_dict = self.__find_in_nested_dict(world_dict, parent="joint")
+        agent_joints = self.__find_in_nested_dict(agent_dict, parent="joint")
+
         if self.agent_cameras:
             self.__find_agent_camera(agent_dict, agent)
 
         # Stores all the sensors and their indices in the mujoco data object in a dictionary.
         indices = self.__create_sensor_index_dict(sensor_dict)
 
+        # Retrieve all qpos and qvel indices for each joint name using the model's jnt_qposadr and jnt_dofadr.
+        qpos_indices, qvel_indices = self.retrieve_mujoco_all_indices(joint_dicts=joint_dict)
+
         # Extracts the indices of the sensors that are attached to the agent.
         agent_indices, agent_sensors = process_sensors(indices, agent_sites)
-        self.agents_observation_index[agent] = agent_indices
+        self.agents_observation_index[agent] = {"sensors": agent_indices, "qpos": qpos_indices, "qvel": qvel_indices}
 
         # Creates the observation space from the sensors and its corresponding indizes.
-        observation_space = create_observation_space(agent_sensors)
+        observation_space = create_sensor_observation_space(agent_sensors)
+
+        observation_space["low"] += [-np.inf for i in qpos_indices]
+        observation_space["high"] += [np.inf for i in qpos_indices]
+
+        observation_space["low"] += [-np.inf for i in qvel_indices]
+        observation_space["high"] += [np.inf for i in qvel_indices]
 
         return observation_space
 
@@ -311,10 +372,24 @@ class MuJoCoParent:
             np.array: The sensor data of the agent.
         """
         if agent is not None:
-            sensor_data = [self.data.sensordata[i] for i in self.agents_observation_index[agent]]
+            sensor_data = [self.data.sensordata[i] for i in self.agents_observation_index[agent]["sensors"]]
             return sensor_data
         else:
             return self.data.sensordata
+        
+    def get_observations(self, agent: str) -> np.array:
+        """Returns the observation of a specific agent
+
+        Parameters:
+            agent (str): The name of the agent.
+
+        Returns:
+            np.array: The observation of the agent.
+        """
+        sensor_data = self.get_sensor_data(agent)
+        qpos = [self.data.qpos[i] for i in self.agents_observation_index[agent]["qpos"]]
+        qvel = [self.data.qvel[i] for i in self.agents_observation_index[agent]["qvel"]]
+        return np.array(sensor_data + qpos + qvel)
 
     def get_data(self, name: str) -> dict:
         """Returns the data of a specific object/geom
